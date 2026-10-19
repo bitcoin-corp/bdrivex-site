@@ -11,14 +11,14 @@
 <meta property="og:site_name" content="bDriveX">
 <meta property="og:title" content="bDriveX · Your files and recordings, kept on chain">
 <meta property="og:description" content="Files and recordings stored on Bitcoin, paid for by bWalletX month by month. Stop paying and we stop storing.">
-<meta property="og:image" content="https://bdrivex.com/og-bdrivex-v1.png">
+<meta property="og:image" content="https://bdrivex.com/og-bdrivex-v2.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="bDriveX: your files and recordings, kept on chain, paid for by bWalletX.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="bDriveX · Your files and recordings, kept on chain">
 <meta name="twitter:description" content="Files and recordings stored on Bitcoin, paid for by bWalletX month by month.">
-<meta name="twitter:image" content="https://bdrivex.com/og-bdrivex-v1.png">
+<meta name="twitter:image" content="https://bdrivex.com/og-bdrivex-v2.png">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -158,6 +158,48 @@ footer{border-top:1px solid #121317;padding:40px 0 56px;color:var(--dim);font-si
 .unlock{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--edge);background:rgba(245,184,0,.05);font:600 15px/1.2 var(--hf)}
 .hero .story{max-width:460px;width:100%;justify-self:center}
 .unlock span:last-child{color:var(--gold-hi);white-space:nowrap}
+/* hero animation: one CSS sequence (arrive, staged reveal, pop), base styles = final state */
+html,body{overflow-x:clip}.hero{overflow-x:clip}
+.stage{position:relative;justify-self:center;width:100%;max-width:420px}
+.stage::before{content:"";position:absolute;inset:-8% -10%;z-index:-1;background:radial-gradient(closest-side at 40% 35%,rgba(245,184,0,.2),transparent 70%)}
+.stage.wait,.stage.wait *{animation-play-state:paused!important}
+.dev{position:relative;background:#08080a;border:1px solid var(--edge);border-radius:30px;padding:22px 20px 20px;box-shadow:0 40px 90px -40px rgba(245,184,0,.45);animation:arrive 1s var(--ease) both}
+.sh{display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 14px/1.2 var(--hf);color:var(--muted)}
+.chips{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{padding:7px 12px;border-radius:999px;background:rgba(245,184,0,.12);color:var(--gold-hi);font:600 12px/1 var(--hf);white-space:nowrap;animation:pop .45s var(--ease) 2.4s both}
+.chip+.chip{animation-delay:2.55s}
+@keyframes arrive{from{opacity:0;transform:translateY(18px) scale(.97)}}
+@keyframes up{from{opacity:0;transform:translateY(8px)}}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.85)}}
+@keyframes slide{from{opacity:0;transform:translateX(-24px)}}
+@keyframes fade{from{opacity:0}}
+@keyframes pulse{50%{opacity:.35}}
+.drive{position:relative;margin-top:16px;padding:12px;border-radius:18px;border:1.5px dashed rgba(255,210,77,.35);background:rgba(245,184,0,.04)}
+.drive-h{display:flex;align-items:center;gap:10px;padding:4px 4px 10px;font:600 15px/1.2 var(--hf)}
+.drive-h small{display:block;color:var(--dim);font:400 12px/1.3 var(--bf)}
+.drive-h svg{flex:none}
+.fl{display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:6px 10px;padding:10px;border-radius:12px;background:#111216;border:1px solid var(--edge);animation:drop .6s var(--ease) both}
+.fl+.fl{margin-top:8px}
+.fl i{grid-row:span 2;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font:700 10px/1 var(--hf);font-style:normal;color:#000;background:var(--grad)}
+.fl b{font:600 13px/1.2 var(--hf);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fl small{color:var(--dim);font-size:11px;text-align:right}
+.bar{grid-column:2/4;height:4px;border-radius:4px;background:#22242b;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--grad);transform-origin:left;animation:fill .9s cubic-bezier(.4,0,.2,1) both}
+.f1{animation-delay:.5s}.f1 .bar span{animation-delay:.9s}
+.f2{animation-delay:.8s}.f2 .bar span{animation-delay:1.2s;animation-duration:1.1s}
+.f3{animation-delay:1.1s}.f3 .bar span{animation-delay:1.5s}
+.stored{display:flex;justify-content:center;margin-top:16px}
+.stored span{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:var(--grad);color:#000;font:700 13px/1 var(--hf);box-shadow:0 8px 24px -8px rgba(245,184,0,.7);animation:pop .45s var(--ease) 2.2s both}
+.months{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:16px}
+.mo{padding:8px 0 7px;border-radius:10px;text-align:center;font:600 11px/1 var(--hf);color:var(--dim);background:rgba(255,255,255,.03);border:1px solid var(--edge);animation:up .4s var(--ease) both}
+.mo em{display:block;margin-top:5px;font:500 9px/1 var(--bf);font-style:normal;letter-spacing:.04em}
+.mo.p{color:var(--gold-hi);border-color:var(--edge-gold);background:rgba(245,184,0,.08)}
+.mo:nth-child(1){animation-delay:2.4s}.mo:nth-child(2){animation-delay:2.5s}.mo:nth-child(3){animation-delay:2.6s}.mo:nth-child(4){animation-delay:2.7s}.mo:nth-child(5){animation-delay:2.8s}.mo:nth-child(6){animation-delay:2.9s}
+.mo.now em{animation:pulse 2.4s ease-in-out 3.4s infinite}
+@keyframes drop{from{opacity:0;transform:translateY(-34px) scale(.96)}}
+@keyframes fill{from{transform:scaleX(0)}}
+@media (max-width:420px){.dev{padding:20px 14px 16px}.months{gap:4px}.mo{font-size:10px}}
+@media (prefers-reduced-motion:reduce){.stage *{animation:none!important}}
 </style>
 </head>
 <body>
@@ -184,13 +226,19 @@ footer{border-top:1px solid #121317;padding:40px 0 56px;color:var(--dim);font-si
     <p class="hint">Selling things rather than keeping them? That's <a href="https://bstorex.com">bStoreX</a>.</p>
   </div>
 
-  <div class="slip" role="img" aria-label="An example bDriveX plan: one folder, paid monthly from bWalletX, with each month's payment signed ahead and locked to its date.">
-    <div class="slip-h"><span>Kept for you</span><span class="example">Example plan</span></div>
-    <div class="slip-who"><div class="av">D</div><div><b>Family photos</b><small>Folder · bDriveX</small></div></div>
-    <div class="ln"><span>Paid from</span><span>Your bWalletX</span></div>
-    <div class="ln"><span>Each payment</span><span>Locked to its month</span></div>
-    <div class="ln tot"><span>Stop</span><span>Any time</span></div>
-    <div class="seal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffd24d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg><span>Fingerprint sealed on chain, so you can prove it hasn't changed.</span></div>
+  <div class="stage" role="img" aria-label="An example bDriveX folder: three files drop in and upload, then the folder shows stored and paid to 31 December, with October to December prepaid month by month.">
+    <div class="dev">
+      <div class="sh"><span>Kept for you</span><span class="example">Example plan</span></div>
+      <div class="drive">
+        <div class="drive-h"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffd24d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg><span>Family photos<small>Folder · bDriveX</small></span></div>
+        <div class="fl f1"><i>JPG</i><b>beach-day.jpg</b><small>4.2 MB</small><div class="bar"><span></span></div></div>
+        <div class="fl f2"><i>MOV</i><b>grandma-80th.mov</b><small>312 MB</small><div class="bar"><span></span></div></div>
+        <div class="fl f3"><i>PDF</i><b>family-recipes.pdf</b><small>1.1 MB</small><div class="bar"><span></span></div></div>
+      </div>
+      <div class="stored"><span>&#10003; Stored · paid to 31 Dec</span></div>
+      <div class="months"><span class="mo p now">Oct<em>Paid</em></span><span class="mo p">Nov<em>Paid</em></span><span class="mo p">Dec<em>Paid</em></span><span class="mo">Jan<em>Next</em></span><span class="mo">Feb<em>&middot;</em></span><span class="mo">Mar<em>&middot;</em></span></div>
+      <div class="chips"><span class="chip">Paid from your bWalletX</span><span class="chip">Stop any time</span></div>
+    </div>
   </div>
 </div>
 
@@ -269,5 +317,13 @@ footer{border-top:1px solid #121317;padding:40px 0 56px;color:var(--dim);font-si
     <span>By The Bitcoin Corporation Ltd.</span>
   </div>
 </footer>
+<script>
+(function(){var st=document.querySelector('.stage');if(!st||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+var cs=st.querySelectorAll('[data-to]');cs.forEach(function(el){el.textContent=(0).toFixed(+el.dataset.dp||0)});st.classList.add('wait');
+function go(){st.classList.remove('wait');cs.forEach(function(el){var to=+el.dataset.to,dp=+el.dataset.dp||0,d=+el.dataset.dur||1300,s=null;
+setTimeout(function(){requestAnimationFrame(function f(t){s=s||t;var k=Math.min(1,(t-s)/d);k=1-Math.pow(1-k,3);el.textContent=(to*k).toLocaleString('en-GB',{minimumFractionDigits:dp,maximumFractionDigits:dp});if(k<1)requestAnimationFrame(f)})},+el.dataset.delay||900)})}
+if(!('IntersectionObserver' in window))return go();
+var io=new IntersectionObserver(function(e){if(e[0].isIntersecting){io.disconnect();go()}},{threshold:.4});io.observe(st)})();
+</script>
 </body>
 </html>
