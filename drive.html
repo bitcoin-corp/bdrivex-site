@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your drive · bDriveX</title>
+<meta name="description" content="Your bDriveX page: your bWalletX name and your files from Google Drive, uploads or a Takeout ZIP, fingerprinted in your browser and minted in your own name, private by default.">
+<meta name="robots" content="noindex,follow">
+<meta property="og:type" content="website"><meta property="og:site_name" content="bDriveX">
+<meta property="og:title" content="Your drive · bDriveX"><meta property="og:description" content="Bring in your Google Drive files and mint them in your own name. Private by default.">
+<meta property="og:image" content="https://bdrivex.com/og-bdrivex-v3.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://bdrivex.com/og-bdrivex-v3.png">
+<meta name="theme-color" content="#000000"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.btn{gap:8px;transition:transform .12s ease,border-color .12s,opacity .12s}
+.btn:hover{border-color:var(--gold)}.btn:active{transform:scale(.98)}
+.btn:focus-visible,input:focus-visible,summary:focus-visible,label:focus-within{outline:2px solid var(--gold);outline-offset:2px}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.5;cursor:not-allowed;transform:none}
+.btn.busy{opacity:.75;cursor:progress}
+.me{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;padding:18px 0 4px}
+.av{width:84px;height:84px;border-radius:50%;background:#111 center/cover;border:2px solid var(--gold);flex:none}
+.av.init{display:grid;place-items:center;background:radial-gradient(circle at 30% 25%,#ffe08a,#d4af37 45%,#7a5a12);color:#0b0b0b;font:700 36px 'Space Grotesk'}
+.me h1{font-size:clamp(30px,6vw,52px);overflow-wrap:anywhere}
+.handle{font:600 18px 'Space Grotesk';color:var(--gold);margin:6px 0 0;overflow-wrap:anywhere}
+.mail{color:var(--mute);font-size:15px;margin:2px 0 0;overflow-wrap:anywhere}
+.link{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:14px}
+.link code{font:500 14px 'IBM Plex Sans';color:var(--ink);background:#000;border:1px solid var(--line);border-radius:999px;padding:6px 12px;overflow-wrap:anywhere}
+.chip{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 12px;font:600 13px 'Space Grotesk';cursor:pointer;min-height:36px}.chip:hover{border-color:var(--gold)}
+.steps3{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.steps3 li{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:#070708;display:flex;gap:12px;align-items:center;min-width:0}
+.steps3 .n{width:30px;height:30px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);display:grid;place-items:center;font:700 14px 'Space Grotesk';flex:none}
+.steps3 li.done .n{background:var(--gold);color:#000}
+.steps3 b{display:block;font:600 15px 'Space Grotesk'}.steps3 span.s{font-size:13px;color:var(--mute);overflow-wrap:anywhere}
+@media(max-width:760px){.steps3{grid-template-columns:1fr}.me{grid-template-columns:1fr}.av{width:72px;height:72px}}
+.row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.msg{font-size:15px;margin:10px 0 0;min-height:1px;overflow-wrap:anywhere}.msg.ok{color:var(--gold)}.msg.bad{color:#ff8a7a}
+.center{text-align:center;max-width:620px;margin:60px auto 0}
+.center .lede{color:#d8d3c5;font-size:18px;margin:14px 0 24px}
+.center .steps3{text-align:left}
+.hint{font-size:13px;color:var(--mute);margin:8px 0 0}
+.testbar{margin:18px 0 0;padding:12px 16px;border-radius:14px;background:var(--gold);color:#000;font-weight:600}.testbar a{color:#000}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-top:18px}
+.panel h2{font-size:clamp(22px,3vw,28px);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.panel>p{color:#cfcabd;margin:0 0 14px;max-width:680px}
+.add{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:760px){.add{grid-template-columns:1fr}}
+.src{border:1px solid var(--line);border-radius:16px;padding:16px;background:#070708;display:flex;flex-direction:column;gap:8px;min-width:0}
+.src b{font:600 16px 'Space Grotesk';display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.src span.s{font-size:13px;color:var(--mute)}
+.src .btn{margin-top:auto;width:100%}
+.drop{margin-top:12px;border:1.5px dashed rgba(255,210,77,.35);border-radius:16px;padding:14px;text-align:center;color:var(--mute);font-size:14px}
+.drop.on{border-color:var(--gold);color:var(--ink);background:rgba(255,210,77,.06)}
+.progress{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:14px;color:#cfcabd}
+.library{margin-top:28px}
+.library h2{font-size:24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px;margin-top:10px}
+.f{background:#070708;border:1px solid #1d1d1d;border-radius:16px;padding:12px;display:grid;grid-template-columns:auto 44px minmax(0,1fr);gap:4px 12px;align-items:center;min-width:0}
+.f.sel{border-color:var(--gold)}.f.minted{border-color:rgba(255,210,77,.45)}.f.err{border-color:rgba(255,138,122,.5)}
+.f .pick{width:28px;height:28px;display:grid;place-items:center}
+.f .pick input{width:20px;height:20px;accent-color:#ffd24d;cursor:pointer;margin:0}
+.f .ic{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font:700 10px/1 'Space Grotesk';color:#000;background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#c98f00);overflow:hidden;text-transform:uppercase}
+.f .t{font:600 14px/1.3 'Space Grotesk';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.f .d{font-size:12px;color:var(--mute);overflow-wrap:anywhere;display:block}
+.f .fp{font:500 11px ui-monospace,Menlo,monospace;color:#cfcabd;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f .acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.f .acts .btn{min-height:38px;padding:0 14px;font-size:14px}
+.f .seal{font:700 10px 'Space Grotesk';letter-spacing:.1em;background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#e0a800);color:#000;border-radius:99px;padding:3px 8px}
+.f .fmsg{grid-column:1/-1;font-size:13px;margin:4px 0 0;overflow-wrap:anywhere}.f .fmsg.bad{color:#ff8a7a}
+.bar2{height:4px;border-radius:4px;background:#22242b;overflow:hidden;display:block;margin-top:4px}.bar2 i{display:block;height:100%;background:var(--gold);width:0}
+.x{background:none;border:1px solid var(--line);color:var(--mute);border-radius:999px;min-height:38px;padding:0 12px;cursor:pointer;font:600 13px 'Space Grotesk'}.x:hover{border-color:#ff8a7a;color:#ff8a7a}
+.tools{position:sticky;bottom:0;z-index:5;margin-top:14px;padding:12px 0 calc(12px + env(safe-area-inset-bottom));background:linear-gradient(0deg,#000 78%,rgba(0,0,0,0))}
+.tools .in{border:1px solid rgba(255,210,77,.35);border-radius:18px;background:#0b0b0c;padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 14px;align-items:center}
+@media(max-width:620px){.tools .in{grid-template-columns:1fr}}
+.cost b{display:block;font:700 clamp(30px,7vw,42px)/1 'Space Grotesk';color:var(--gold);letter-spacing:-.02em}
+.cost span{display:block;font-size:13px;color:#cfcabd;margin-top:4px;overflow-wrap:anywhere}
+.cost em{font-style:normal;color:var(--mute)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:620px){.btns{justify-content:stretch}.btns .btn{flex:1 1 auto}}
+.mode{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.mode label{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:600 13px 'Space Grotesk';cursor:pointer}
+.mode label.off{opacity:.6;cursor:not-allowed}
+.mode input{accent-color:#ffd24d;margin:0}
+.tools .msg{grid-column:1/-1;margin:0}
+.empty{color:var(--mute);padding:16px 0}
+.check{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.check li{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid var(--line);padding:10px 0;font-size:15px}
+.check li:first-child{border-top:0}
+details summary{cursor:pointer;color:var(--gold);font:600 14px 'Space Grotesk';margin-top:12px}
+details ul{color:var(--mute);font-size:13px;padding-left:18px;margin:8px 0 0}
+.modal{border:1px solid rgba(255,210,77,.35);border-radius:22px;background:#0b0b0c;color:var(--ink);padding:0;width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:hidden}
+.modal::backdrop{background:rgba(0,0,0,.8)}
+.modal[open]{display:flex;flex-direction:column}
+.modal .mb{padding:22px 20px 18px;display:flex;flex-direction:column;min-height:0;overflow:auto}
+.modal h2{font-size:22px;padding-right:44px}
+.modal .xx{position:absolute;right:12px;top:10px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:#000;color:var(--ink);font-size:22px;cursor:pointer;z-index:2}
+.modal p{color:#cfcabd}
+.modal .row2{justify-content:flex-end}
+</style>
+</head>
+<body>
+<header class="wrap nav">
+  <a class="brand" href="/" aria-label="bDriveX home"><img src="/logo.svg" alt="" width="22" height="30"><span>bDrive<span class="gold">X</span></span></a>
+  <nav class="nav-links" aria-label="Main"><a class="hide-s" href="/">Home</a><a href="/browse">Browse</a><span data-bwx></span></nav>
+</header>
+<main class="wrap">
+  <p class="testbar" id="testbar" hidden>Preview copy. Connecting your wallet and Google Drive only work on <a href="https://bdrivex.com/drive">bdrivex.com</a>. Uploads and Takeout ZIPs work here.</p>
+
+  <section id="gate" class="center" hidden>
+    <p class="kicker">Your drive</p>
+    <h1>Connect your wallet to open your drive.</h1>
+    <p class="lede">Your bDriveX page carries your bWalletX name. Then bring in your files and mint them in your own name, private by default.</p>
+    <span data-bwx="drive"></span>
+    <p class="msg bad" id="gateMsg"></p>
+    <ol class="steps3" aria-label="Three steps">
+      <li><span class="n">1</span><div><b>Connect bWalletX</b><span class="s">Opens your page</span></div></li>
+      <li><span class="n">2</span><div><b>Bring in your files</b><span class="s">Google Drive, uploads or Takeout</span></div></li>
+      <li><span class="n">3</span><div><b>Store or mint</b><span class="s">Private, in your name</span></div></li>
+    </ol>
+    <p class="hint" style="margin-top:18px">No wallet yet? <a class="gold" href="https://bwalletx.com/get">Get bWalletX</a>. It’s free.</p>
+  </section>
+
+  <section id="nf" class="center" hidden>
+    <p class="kicker">bDriveX</p>
+    <h1 id="nfTitle">Nobody here yet.</h1>
+    <p class="lede">Nobody has this name on bDriveX. If it’s yours, connect your wallet and open your drive.</p>
+    <a class="btn btn-gold" href="/drive">Open my drive</a>
+  </section>
+
+  <section id="loading" class="center"><p class="mute">Opening your drive…</p></section>
+
+  <section id="page" hidden>
+    <div class="me">
+      <div class="av" id="av" role="img" aria-label=""></div>
+      <div style="min-width:0">
+        <p class="kicker" id="kick">Your drive</p>
+        <h1 id="name"></h1>
+        <p class="handle" id="handle"></p>
+        <p class="mail" id="mail"></p>
+        <div class="link" id="linkRow" hidden><code id="pubLink"></code><button class="chip" type="button" id="copyLink">Copy link</button></div>
+      </div>
+    </div>
+
+    <ol class="steps3" id="owner3" hidden aria-label="Your three steps">
+      <li id="st1" class="done"><span class="n">1</span><div><b>Wallet connected</b><span class="s" id="st1s"></span></div></li>
+      <li id="st2"><span class="n">2</span><div><b>Bring in your files</b><span class="s" id="st2s">Nothing yet</span></div></li>
+      <li id="st3"><span class="n">3</span><div><b>Store or mint</b><span class="s" id="st3s">After adding files</span></div></li>
+    </ol>
+    <div class="row2" id="ownerLinks" hidden><button class="chip" type="button" data-open="status">What works today</button><button class="chip" type="button" id="findBtn">Find my records</button><span data-bwx="signout"></span></div>
+    <p class="msg" id="findMsg" aria-live="polite"></p>
+
+    <section class="panel" id="addPanel" hidden aria-labelledby="addH">
+      <h2 id="addH">Bring in your files</h2>
+      <p>Only the files you pick. Each one is fingerprinted (sha256) here in your browser. Your files are never uploaded to us.</p>
+      <div class="add">
+        <div class="src"><b>From Google Drive <span class="badge" id="gBadge"></span></b><span class="s">Pick files in Google’s own window. We only see the ones you pick.</span>
+          <button class="btn btn-gold" type="button" id="gBtn">From Google Drive</button><p class="msg" id="gMsg" aria-live="polite"></p></div>
+        <div class="src"><b>Upload files <span class="badge live">Live</span></b><span class="s">Any files from this device. They stay on this device.</span>
+          <label class="btn btn-ghost" for="fileIn">Upload files</label><input type="file" id="fileIn" multiple hidden><p class="msg" id="uMsg" aria-live="polite"></p></div>
+        <div class="src"><b>Google Takeout ZIP <span class="badge live">Live</span></b><span class="s">No Google sign-in. Export Drive at takeout.google.com, then add the ZIP. It’s read here, not uploaded.</span>
+          <label class="btn btn-ghost" for="zipIn">Add a Takeout ZIP</label><input type="file" id="zipIn" accept=".zip,application/zip" hidden><p class="msg" id="zMsg" aria-live="polite"></p></div>
+      </div>
+      <div class="drop" id="drop">Or drop files (or a Takeout ZIP) here.</div>
+      <div class="progress" id="prog" hidden><span id="progT" aria-live="polite"></span><button class="x" type="button" id="stopBtn">Stop</button></div>
+    </section>
+
+    <section class="library" id="lib" aria-labelledby="lH" hidden>
+      <h2 id="lH">Your files <span class="badge live">Live</span></h2>
+      <p class="mute" id="lLede" style="margin:0">Add files above. They show here, ready to mint.</p>
+      <div class="list" id="list"></div>
+      <details id="caveats"><summary>What minting does</summary><ul>
+        <li>Each file gets a private record on Bitcoin: its name, type, size, sha256 fingerprint, date and (for Drive) its link, locked with your wallet’s keys. Only you can open it.</li>
+        <li>The fingerprint proves later that a file is the same one, byte for byte. The file itself stays where it is.</li>
+        <li>1p per file plus a small network fee, shown above before anything happens. Your wallet asks once per batch.</li>
+        <li>You can make any one record public later. It then shows on Browse and your page.</li>
+        <li>Keeping the whole file on chain, encrypted, is Coming. Its cost is shown beside the record cost so you can see it first.</li>
+      </ul></details>
+      <div class="tools" id="tools" hidden>
+        <div class="in">
+          <div class="cost" aria-live="polite"><b id="costBig">$0.00</b><span id="costSub"></span></div>
+          <div class="btns"><button class="btn btn-ghost" type="button" id="selAll">Select all</button><button class="btn btn-ghost" type="button" id="dryBtn">Dry run</button><button class="btn btn-gold" type="button" id="mintBtn" disabled>Mint</button></div>
+          <div class="mode" role="radiogroup" aria-label="What to keep">
+            <label><input type="radio" name="mode" value="record" checked> Private record <span class="badge live">Live</span></label>
+            <label class="off" title="Coming"><input type="radio" name="mode" value="full" disabled> Full encrypted copy <span class="badge coming">Coming</span> <span id="fullCost" class="mute"></span></label>
+          </div>
+          <p class="msg" id="mintMsg" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="library" id="pub" hidden aria-labelledby="pH">
+      <h2 id="pH">Public files</h2>
+      <p class="mute" style="margin:0">Only files this person chose to make public.</p>
+      <div class="list" id="pubList"></div>
+    </section>
+
+    <dialog class="modal" id="status" aria-labelledby="sH"><button class="xx" type="button" data-close aria-label="Close">×</button><div class="mb">
+      <h2 id="sH">What works today</h2>
+      <ul class="check" id="checklist"></ul>
+    </div></dialog>
+
+    <dialog class="modal" id="ask" aria-labelledby="askH"><button class="xx" type="button" data-close aria-label="Close">×</button><div class="mb">
+      <h2 id="askH"></h2>
+      <p id="askP"></p>
+      <div class="row2"><button class="btn btn-ghost" type="button" data-close>Cancel</button><button class="btn btn-gold" type="button" id="askGo"></button></div>
+    </div></dialog>
+  </section>
+</main>
+<footer>bDriveX · part of the bWalletX family · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="https://bwalletx.com/get">Get bWalletX</a></footer>
+<script src="https://unpkg.com/@bwalletx/connect@0.5.0/dist/bwalletx-connect.global.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="/bwx.js"></script>
+<script type="module" src="/drive.js"></script>
+</body>
+</html>

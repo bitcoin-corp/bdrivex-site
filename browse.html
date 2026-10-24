@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browse public files · bDriveX</title>
+<meta name="description" content="Files people chose to make public on bDriveX: name, size, date and a sha256 fingerprint sealed on Bitcoin. Private files never show here.">
+<link rel="canonical" href="https://bdrivex.com/browse">
+<meta property="og:type" content="website"><meta property="og:url" content="https://bdrivex.com/browse"><meta property="og:site_name" content="bDriveX">
+<meta property="og:title" content="Browse public files · bDriveX"><meta property="og:description" content="Only files people chose to make public. Private ones never show here.">
+<meta property="og:image" content="https://bdrivex.com/og-bdrivex-v3.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://bdrivex.com/og-bdrivex-v3.png">
+<meta name="theme-color" content="#000000"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.hero{padding:34px 0 8px}.hero h1{font-size:clamp(34px,7vw,60px);margin-bottom:10px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px;margin:22px 0 30px}
+.f{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 12px;align-items:center;min-width:0}
+.ic{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font:700 10px/1 'Space Grotesk';color:#000;background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#c98f00);text-transform:uppercase;overflow:hidden}
+.t{font:600 14px/1.3 'Space Grotesk';overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.d{font-size:12px;color:var(--mute);display:block;overflow-wrap:anywhere}
+.fp{font:500 11px ui-monospace,Menlo,monospace;color:#cfcabd;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.acts a{font-size:13px;color:var(--gold)}
+.state{color:var(--mute);padding:10px 0}
+</style>
+</head>
+<body>
+<header class="wrap nav">
+  <a class="brand" href="/" aria-label="bDriveX home"><img src="/logo.svg" alt="" width="22" height="30"><span>bDrive<span class="gold">X</span></span></a>
+  <nav class="nav-links" aria-label="Main"><a class="hide-s" href="/">Home</a><a href="/browse" aria-current="page" class="gold">Browse</a><span data-bwx></span></nav>
+</header>
+<main class="wrap">
+  <section class="hero">
+    <p class="kicker">Browse <span class="badge live">Live</span></p>
+    <h1>Public files on bDriveX.</h1>
+    <p class="mute" style="max-width:640px;margin:0">Only files their owners chose to make public: the name, size, date and a sha256 fingerprint sealed on Bitcoin. Private files never show here, and we never hold the files themselves.</p>
+  </section>
+  <div class="list" id="list" aria-live="polite"></div>
+  <p class="state" id="state">Loading…</p>
+  <p class="mute" style="font-size:14px;margin-top:20px">Your files here? <a class="gold" href="/drive">Open your drive</a>. Everything is private until you choose.</p>
+</main>
+<footer>bDriveX · part of the bWalletX family · <a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const size = (n) => { n = Number(n) || 0; return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : n < 1073741824 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1073741824).toFixed(2) + ' GB'; };
+  const day = (d) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const ext = (n) => (String(n).match(/\.([a-z0-9]{1,4})$/i) || [])[1] || 'file';
+  fetch('/api/browse').then((r) => r.ok ? r.json() : Promise.reject()).then((j) => {
+    const fs = j.items || [];
+    $('list').innerHTML = fs.map((f) => {
+      const tx = String(f.outpoint || '').split(':')[0];
+      const who = f.alias && /^[a-z0-9][a-z0-9_.-]{1,39}$/.test(f.alias) ? f.alias : null;
+      return `<article class="f"><span class="ic" aria-hidden="true">${esc(ext(f.name))}</span>
+        <span style="min-width:0"><span class="t" title="${esc(f.name)}">${esc(f.name)}</span><span class="d">${esc(size(f.size))}${f.modifiedAt ? ' · ' + esc(day(f.modifiedAt)) : ''}${who ? ' · $' + esc(who) : ''}</span><span class="fp" title="sha256 ${esc(f.sha256)}">sha256 ${esc(String(f.sha256).slice(0, 16))}…</span></span>
+        <span class="acts">${/^[0-9a-f]{64}$/.test(tx) ? `<a href="https://whatsonchain.com/tx/${tx}" target="_blank" rel="noopener">On chain</a>` : ''}${who ? `<a href="/u/${encodeURIComponent(who)}">$${esc(who)}’s page</a>` : ''}</span></article>`;
+    }).join('');
+    $('state').textContent = fs.length ? '' : j.live ? 'Nothing public yet. Files are private until their owner makes one public.' : 'Public files show here soon.';
+    $('state').hidden = !!fs.length;
+  }).catch(() => { $('state').textContent = 'Couldn’t load just now. Try again shortly.'; });
+})();
+</script>
+<script src="https://unpkg.com/@bwalletx/connect@0.5.0/dist/bwalletx-connect.global.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="/bwx.js"></script>
+</body>
+</html>

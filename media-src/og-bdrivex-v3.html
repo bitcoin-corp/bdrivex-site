@@ -1,0 +1,37 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;width:1200px;height:630px;background:#000;color:#f4f1e8;font-family:'IBM Plex Sans';position:relative;overflow:hidden}
+body::before{content:"";position:absolute;right:-140px;top:10px;width:760px;height:660px;background:radial-gradient(closest-side,rgba(245,184,0,.24),transparent 70%)}
+.logo{position:absolute;left:72px;top:58px;display:flex;align-items:center;gap:14px;font:700 34px/1 'Space Grotesk';letter-spacing:-.02em}
+.g{color:#ffd24d}
+h1{position:absolute;left:72px;top:132px;margin:0;font:700 88px/.98 'Space Grotesk';letter-spacing:-.05em}
+h1 span{background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#c98f00);-webkit-background-clip:text;color:transparent}
+ol{position:absolute;left:72px;top:352px;margin:0;padding:0;list-style:none;display:grid;gap:14px;width:560px}
+li{display:flex;gap:16px;align-items:center;font:600 27px/1.1 'Space Grotesk'}
+li i{width:42px;height:42px;border-radius:50%;border:2px solid #ffd24d;color:#ffd24d;display:grid;place-items:center;font:700 20px/1 'Space Grotesk';font-style:normal;flex:none}
+.foot{position:absolute;left:72px;bottom:46px;font:500 22px/1 'Space Grotesk';color:#7c7a73}.foot b{color:#f4f1e8;font-weight:500}
+.card{position:absolute;right:70px;top:96px;width:420px;background:#0b0c0f;border:1px solid #2a2c33;border-radius:26px;padding:24px;transform:rotate(2.5deg);box-shadow:0 40px 90px -30px rgba(245,184,0,.45)}
+.h{display:flex;justify-content:space-between;align-items:center;font:600 18px/1 'Space Grotesk';color:#a9a69c}
+.h em{font-style:normal;font:500 13px/1 'Space Grotesk';letter-spacing:.12em;color:#7c7a73}
+.f{display:grid;grid-template-columns:44px 1fr auto;gap:4px 12px;align-items:center;padding:12px;border-radius:14px;background:#121318;border:1px solid #23252c;margin-top:12px}
+.f i{grid-row:span 2;width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font:700 12px/1 'Space Grotesk';font-style:normal;color:#000;background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#c98f00)}
+.f b{font:600 18px/1.2 'Space Grotesk'}.f small{font:500 13px ui-monospace,Menlo,monospace;color:#9a968b}
+.f s{text-decoration:none;font:700 11px 'Space Grotesk';letter-spacing:.1em;background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#e0a800);color:#000;border-radius:99px;padding:4px 9px;grid-row:span 2}
+.tot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid #1d1e23}
+.tot span{color:#a9a69c;font-size:17px}.tot b{font:700 46px/1 'Space Grotesk';color:#ffd24d}
+.lock{margin-top:12px;padding:11px 14px;border-radius:12px;background:rgba(245,184,0,.08);border:1px solid rgba(255,210,77,.3);font-size:16px;color:#cfcabd}
+</style></head><body>
+<div class="logo"><svg width="26" height="35" viewBox="23 8 74 100"><defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="12" x2="0" y2="105"><stop offset="0" stop-color="#FFE58A"/><stop offset=".55" stop-color="#FFD24D"/><stop offset="1" stop-color="#C98F00"/></linearGradient><mask id="m"><rect width="140" height="140" fill="#fff"/><circle cx="60" cy="72" r="15" fill="#000"/></mask></defs><g fill="url(#g)" mask="url(#m)"><polygon points="45,12 45,76 27,76 27,30"/><circle cx="60" cy="72" r="33"/></g></svg><span>bDrive<span class="g">X</span></span></div>
+<h1>Your Drive files.<br><span>In your name.</span></h1>
+<ol><li><i>1</i>Connect bWalletX</li><li><i>2</i>Bring in your Drive files</li><li><i>3</i>Store or mint, private</li></ol>
+<div class="foot"><b>bdrivex.com</b> · only the files you pick</div>
+<div class="card">
+  <div class="h"><span>Your files</span><em>EXAMPLE</em></div>
+  <div class="f"><i>PDF</i><b>lease-2026.pdf</b><s>MINTED</s><small>sha256 9f2c41e0b7…</small></div>
+  <div class="f"><i>JPG</i><b>beach-day.jpg</b><s>MINTED</s><small>sha256 4a8d13c6f2…</small></div>
+  <div class="f"><i>XLSX</i><b>budget.xlsx</b><s>MINTED</s><small>sha256 e71b0a95d3…</small></div>
+  <div class="tot"><span>3 files · 1 approval</span><b>$0.04</b></div>
+  <div class="lock">Locked with your keys. Only you can open them.</div>
+</div>
+</body></html>

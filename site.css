@@ -1,0 +1,28 @@
+:root{--bg:#000;--ink:#f4f1e8;--mute:#9a968b;--line:rgba(255,210,77,.16);--gold:#ffd24d;--card:#0b0b0c;--red:#ff5f57}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 'IBM Plex Sans',system-ui,sans-serif;overflow-x:hidden}
+a{color:inherit}
+.wrap{max-width:1160px;margin:0 auto;padding:0 16px}
+.nav{display:flex;align-items:center;justify-content:space-between;height:68px;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:700 22px 'Space Grotesk'}
+.brand img{width:30px;height:30px}.gold{color:var(--gold)}
+.nav-links{display:flex;gap:14px;align-items:center;font-size:14px}
+.nav-links a{text-decoration:none;color:#cfcabd}
+@media(max-width:640px){.hide-s{display:none}}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;font:600 15px 'Space Grotesk';text-decoration:none;border:0;cursor:pointer}
+.btn-gold{background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#e0a800);color:#000!important}
+.btn-ghost{border:1px solid var(--line);color:var(--ink)!important;background:transparent}
+.btn[aria-disabled=true]{opacity:.55;cursor:not-allowed}
+.badge{display:inline-flex;align-items:center;gap:6px;font:600 11px 'Space Grotesk';letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:3px 9px;vertical-align:middle}
+.badge.live{background:rgba(70,200,120,.14);color:#6ee09a}.badge.live::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.coming{background:rgba(255,210,77,.12);color:var(--gold)}
+.kicker{font:600 13px 'Space Grotesk';letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{font:700 clamp(34px,6vw,64px)/1 'Space Grotesk';letter-spacing:-.035em;margin:0}
+h2{font:700 clamp(24px,3.4vw,34px)/1.1 'Space Grotesk';letter-spacing:-.02em;margin:0 0 14px}
+.mute{color:var(--mute)}
+footer{padding:36px 16px;color:var(--mute);font-size:14px;text-align:center;border-top:1px solid var(--line);margin-top:60px}
+.find{display:flex;gap:8px;flex-wrap:wrap;max-width:560px}
+.find input{flex:1 1 220px;min-height:46px;border-radius:999px;border:1px solid rgba(255,210,77,.35);background:#0b0b0c;color:var(--ink);padding:0 18px;font:500 16px 'IBM Plex Sans'}
+.find input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.find-msg{font-size:14px;color:var(--mute);min-height:22px;margin-top:6px}
+[hidden]{display:none!important}
