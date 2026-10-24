@@ -1,7 +1,7 @@
 /* Connect bWalletX on bdrivex.com: drop <span data-bwx></span> anywhere and include this after
    @bwalletx/connect's global build and qrcode-generator. Extension / in-app wallets connect straight away;
    on a desktop with no extension it shows a QR to pair the phone app (or paste into web.bwalletx.com).
-   Once connected the button shows the wallet's paymail name ($name), never the identity key.
+   Once connected the button shows the wallet's full paymail (name@bwalletx.com); no name yet: short key + Get your name.
    <span data-bwx="drive"></span> turns into a "Your drive" link once connected.
    In the header, a connected slot is a "$handle" link to /drive, and connecting there opens /drive.
    <span data-bwx="signout"></span> is a Sign out button while connected (nothing when signed out). */
@@ -13,6 +13,9 @@
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const css = document.createElement('style');
   css.textContent = `.bwx-btn{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,210,77,.45);background:#0b0b0c;color:#ffd24d;font:600 14px 'Space Grotesk',sans-serif;cursor:pointer}
+  .bwx-btn{max-width:100%;min-width:0}.bwx-pm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  header [data-bwx]{display:inline-flex;align-items:center;min-width:0;max-width:min(62vw,340px)}
+  .bwx-get{margin-left:8px;font-size:12px;color:#ffd24d;white-space:nowrap}
   .bwx-btn:hover{border-color:#ffd24d}.bwx-btn.on{background:linear-gradient(180deg,#ffe58a,#ffd24d 55%,#e0a800);color:#000;border:0}
   .bwx-dot{width:8px;height:8px;border-radius:50%;background:currentColor}
   .bwx-modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.8);display:grid;place-items:center;padding:16px}
@@ -22,25 +25,29 @@
   .bwx-link{word-break:break-all;font-size:11px;color:#9a968b;background:#000;border-radius:8px;padding:8px;margin-top:8px;cursor:copy}`;
   document.head.appendChild(css);
 
-  let key = null, wallet = null, alias = null;
-  /** $name for an identity key, from the bWalletX paymail server (public lookup). */
+  let key = null, wallet = null, alias = null, paymail = null;
+  /** Main name for an identity key, from the bWalletX paymail server (public lookup): {paymail, alias}. */
   const nameFor = async (k) => {
-    try { const r = await fetch('https://pay.bwallet.space/api/paymail/lookup?key=' + k); const j = await r.json(); return r.ok && j.alias ? j.alias : null; } catch { return null; }
+    try { const r = await fetch('https://pay.bwallet.space/api/paymail/lookup?key=' + k); const j = await r.json(); return r.ok && j.paymail ? { paymail: j.paymail, alias: j.alias || null } : null; } catch { return null; }
   };
-  const setKey = async (k) => { key = k || null; alias = null; draw(); if (key) { const a = await nameFor(key); if (key === k) { alias = a; draw(); } } };
-  window.bdxIdentity = () => ({ identityKey: key, alias });
+  const setKey = async (k) => { key = k || null; alias = null; paymail = null; draw(); if (key) { const n = await nameFor(key); if (key === k && n) { alias = n.alias; paymail = n.paymail; draw(); } } };
+  const shortKey = (k) => k.slice(0, 6) + '\u2026' + k.slice(-4);
+  window.bdxIdentity = () => ({ identityKey: key, alias, paymail });
   /** The connected BRC-100 wallet (for signing claims): this session's, or a restored extension/pairing. */
   window.bdxWallet = async () => wallet || (wallet = (await C.connectBwalletX({})).wallet);
   const draw = () => slots.forEach((s) => {
     s.innerHTML = '';
-    const label = alias ? '$' + esc(alias) : key ? 'bWalletX connected' : '';
+    // Signed in: the full paymail (name@bwalletx.com); no name yet: a short key + "Get your name".
+    const label = paymail ? `<span class="bwx-pm">${esc(paymail)}</span>` : key ? `<span class="bwx-pm">${esc(shortKey(key))}</span>` : '';
     const inNav = !!s.closest('header');
-    // Navbar, connected: "$handle" -> your account page (/drive). Sign out lives on the drive page.
+    // Navbar, connected: full paymail -> your account page (/drive). Sign out lives on the drive page.
     if (key && inNav) {
       const a = document.createElement('a');
       a.className = 'bwx-btn on'; a.href = '/drive'; a.title = 'Your drive: paymail and files';
-      a.innerHTML = `<span class="bwx-dot"></span>${alias ? label : 'Your account'}`;
-      s.appendChild(a); return;
+      a.innerHTML = `<span class="bwx-dot"></span>${label}`;
+      s.appendChild(a);
+      if (!paymail) { const g = document.createElement('a'); g.className = 'bwx-get'; g.href = 'https://bwalletx.com/get'; g.target = '_blank'; g.rel = 'noopener'; g.textContent = 'Get your name'; s.appendChild(g); }
+      return;
     }
     if (s.dataset.bwx === 'signout') {
       if (!key) return;
@@ -51,7 +58,7 @@
     if (key && s.dataset.bwx === 'drive') {
       const a = document.createElement('a');
       a.className = 'bwx-btn on'; a.href = '/drive';
-      a.innerHTML = `Your drive${alias ? ' · ' + label : ''} <span aria-hidden="true">&rarr;</span>`;
+      a.innerHTML = `Your drive · ${label} <span aria-hidden="true">&rarr;</span>`;
       s.appendChild(a); return;
     }
     const b = document.createElement('button');

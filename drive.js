@@ -69,12 +69,17 @@ function head() {
   document.title = `${owner() ? 'Your drive' : name} · bDriveX`;
   $('kick').textContent = owner() ? 'Your drive' : 'Drive';
   $('name').textContent = name;
-  $('handle').textContent = pg.alias ? '$' + pg.alias : preview ? 'Preview: connect works on bdrivex.com' : 'No $name yet';
-  $('mail').textContent = pg.paymail || (preview ? '' : 'Pick a name in bWalletX (Settings › Identity) and it shows here.');
+  // Full paymail is the primary label; the $handle is secondary. No name: short key + "Get your name".
+  const k0 = key || pg.identityKey || '';
+  const sk = k0 ? k0.slice(0, 6) + '\u2026' + k0.slice(-4) : '';
+  $('handle').textContent = pg.paymail || (preview ? 'Preview: connect works on bdrivex.com' : sk || 'No name yet');
+  if (pg.paymail) $('mail').textContent = pg.alias ? '$' + pg.alias : '';
+  else if (preview) $('mail').textContent = '';
+  else $('mail').innerHTML = '<a href="https://bwalletx.com/get" target="_blank" rel="noopener">Get your name</a>';
   setAvatar(pg.avatar, name);
   if (pg.alias) { $('linkRow').hidden = false; $('pubLink').textContent = 'bdrivex.com/u/' + pg.alias; }
   $('copyLink').onclick = async () => { try { await navigator.clipboard.writeText('https://bdrivex.com/u/' + pg.alias); $('copyLink').textContent = 'Copied'; } catch { $('copyLink').textContent = 'Copy failed'; } setTimeout(() => { $('copyLink').textContent = 'Copy link'; }, 1600); };
-  $('st1s').textContent = pg.alias ? '$' + pg.alias : preview ? 'Preview (no wallet)' : 'Connected';
+  $('st1s').textContent = pg.paymail || (preview ? 'Preview (no wallet)' : sk || 'Connected');
   if (preview) { $('st1').classList.remove('done'); $('findBtn').hidden = true; }
 }
 
