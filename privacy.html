@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · bDriveX</title>
+<meta name="description" content="What bDriveX reads, what it keeps, and how to revoke it. Only the files you pick. In plain English.">
+<link rel="canonical" href="https://bdrivex.com/privacy">
+<meta property="og:type" content="website"><meta property="og:url" content="https://bdrivex.com/privacy"><meta property="og:site_name" content="bDriveX">
+<meta property="og:title" content="Privacy · bDriveX"><meta property="og:description" content="Only the files you pick. Encrypted with your wallet's keys. How to revoke access.">
+<meta property="og:image" content="https://bdrivex.com/og-bdrivex-v3.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://bdrivex.com/og-bdrivex-v3.png">
+<meta name="theme-color" content="#000000"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>.doc{max-width:720px;padding:40px 16px 20px}.doc h2{margin-top:34px;font-size:24px}.doc p,.doc li{color:#cfcabd}.doc ul{padding-left:20px}.doc a{color:var(--gold)}.doc code{font-size:14px;background:#0b0b0c;border:1px solid var(--line);border-radius:6px;padding:1px 6px;overflow-wrap:anywhere}</style>
+</head>
+<body>
+<header class="wrap nav"><a class="brand" href="/" aria-label="bDriveX home"><img src="/logo.svg" alt="" width="22" height="30"><span>bDrive<span class="gold">X</span></span></a><nav class="nav-links" aria-label="Main"><a class="hide-s" href="/">Home</a><a href="/browse">Browse</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav></header>
+<main class="wrap doc">
+  <p class="kicker">Privacy</p>
+  <h1>Privacy, in plain English.</h1>
+  <p class="mute">Last updated 24 October 2026.</p>
+  <p>bDriveX (bdrivex.com) is run by THE BITCOIN CORPORATION LTD, a company registered in England and Wales, company number 16735102 ("we"). This page says what we read, what we keep and how to take it back.</p>
+
+  <h2>What we access: only the files you pick</h2>
+  <ul>
+    <li><b>Google Drive.</b> If you press “From Google Drive”, Google shows its own file picker. We ask Google only for the <code>drive.file</code> permission, which covers <b>only the files you pick</b> in that window. We can’t see, list or open anything else in your Drive. We never ask for access to your whole Drive.</li>
+    <li>For each file you pick, your browser reads its name, type, size, date and link, and reads its bytes once to make a fingerprint (a sha256 hash). For Google Docs, Sheets and Slides, which have no file of their own, the fingerprint is of an export (PDF or Excel). This all happens in your browser. The file is not sent to our servers.</li>
+    <li>The Google access is kept only in that browser tab’s memory and is revoked as soon as your files are read. We don’t keep the Google token, your Google password or your email address.</li>
+    <li><b>Uploads and Google Takeout ZIPs</b> are read in your browser in the same way. No Google sign-in is needed, and the files are not uploaded to us.</li>
+  </ul>
+
+  <h2>Encrypted with your wallet’s keys</h2>
+  <p>When you mint, each file’s record (name, type, size, fingerprint, date and, for Drive, its link) is <b>encrypted with your own bWalletX keys</b> on your device before it is written to the Bitcoin SV blockchain. Only your wallet can open it. <b>We never keep copies unencrypted.</b> In this version we write the record, not the file itself. Keeping a full encrypted copy of the file is marked “Coming” and will also be encrypted with your keys on your device first.</p>
+  <p>Records are private by default. If you choose to make one public, its name, type, size, fingerprint and date are written on chain in clear, signed by you, and listed on Browse and your page. The Drive link is never made public.</p>
+
+  <h2>What we keep</h2>
+  <ul>
+    <li><b>Public records you chose to list</b>: the details above, your public $name, and your wallet’s signature, so Browse can show them.</li>
+    <li>A short-lived cookie that keeps your wallet connected. We don’t use advertising or tracking cookies.</li>
+    <li>Your library list (file details, never the files) is saved in your own browser, on your device.</li>
+  </ul>
+
+  <h2>What we never do</h2>
+  <ul>
+    <li>We never download, copy or host your files on our servers.</li>
+    <li>We never read files you didn’t pick, and never change or delete anything in your Drive.</li>
+    <li>We never sell your data or share it with advertisers.</li>
+  </ul>
+
+  <h2>Who else is involved</h2>
+  <ul>
+    <li><b>Google</b>, for the Drive picker and the files you pick (<a href="https://policies.google.com/privacy">Google Privacy Policy</a>). bDriveX’s use of information received from Google APIs follows the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</li>
+    <li><b>bWalletX</b>, our own wallet, which holds your keys on your device.</li>
+    <li><b>Vercel</b>, which hosts this website. <b>WhatsOnChain</b> and <b>GorillaPool</b>, which we ask whether a transaction reached the network.</li>
+  </ul>
+
+  <h2>How to revoke and delete</h2>
+  <ul>
+    <li>Remove bDriveX’s Google access at any time at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>. (We already revoke it after each use; this removes the app from your account too.)</li>
+    <li>Take a public record off Browse with “Remove from Browse” on your drive page, or email <a href="mailto:support@bwalletx.com">support@bwalletx.com</a>. We remove listings within 30 days.</li>
+    <li>Clear your library from this device with “Remove”, or by clearing this site’s data in your browser.</li>
+    <li>Anything written to a blockchain is permanent and can’t be deleted by us or anyone else. Private records stay unreadable without your keys. Only make public what you want public.</li>
+  </ul>
+
+  <h2>Your rights</h2>
+  <p>Under UK data protection law you can ask to see, correct or delete the personal data we hold about you, and complain to the Information Commissioner’s Office (ico.org.uk). Contact us first at <a href="mailto:support@bwalletx.com">support@bwalletx.com</a>.</p>
+</main>
+<footer>bDriveX · part of the bWalletX family · <a href="https://bwalletx.com/get">Get bWalletX</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
+</body>
+</html>

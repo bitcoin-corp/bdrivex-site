@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>bDriveX · Your files and recordings, kept on chain</title>
-<meta name="description" content="bDriveX keeps your files and recordings on Bitcoin, paid for from your own bWalletX a little each month. Stop paying and we stop storing. Recordings are kept only when every speaker agrees.">
+<title>bDriveX · Your Drive files, in your name</title>
+<meta name="description" content="Connect bWalletX, bring in your Google Drive files (only the ones you pick), and mint a private record of each in your own name, fingerprinted in your browser and locked with your keys.">
 <link rel="canonical" href="https://bdrivex.com/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://bdrivex.com/">
 <meta property="og:site_name" content="bDriveX">
-<meta property="og:title" content="bDriveX · Your files and recordings, kept on chain">
-<meta property="og:description" content="Files and recordings stored on Bitcoin, paid for by bWalletX month by month. Stop paying and we stop storing.">
-<meta property="og:image" content="https://bdrivex.com/og-bdrivex-v2.png">
+<meta property="og:title" content="bDriveX · Your Drive files, in your name">
+<meta property="og:description" content="Bring in your Google Drive files and mint them in your own name. Only the files you pick. Private by default.">
+<meta property="og:image" content="https://bdrivex.com/og-bdrivex-v3.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="bDriveX: your files and recordings, kept on chain, paid for by bWalletX.">
+<meta property="og:image:alt" content="bDriveX: connect bWalletX, bring in your Drive files, mint them in your name. Private by default.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="bDriveX · Your files and recordings, kept on chain">
-<meta name="twitter:description" content="Files and recordings stored on Bitcoin, paid for by bWalletX month by month.">
-<meta name="twitter:image" content="https://bdrivex.com/og-bdrivex-v2.png">
+<meta name="twitter:title" content="bDriveX · Your Drive files, in your name">
+<meta name="twitter:description" content="Bring in your Google Drive files and mint them in your own name. Private by default.">
+<meta name="twitter:image" content="https://bdrivex.com/og-bdrivex-v3.png">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -67,6 +67,11 @@ h1,h2,h3{font-family:var(--hf);letter-spacing:-.025em;margin:0}
 .lede{font-size:19px;color:var(--muted);max-width:520px;margin:24px 0 32px}
 .ctas{display:flex;flex-wrap:wrap;gap:12px}
 .hint{margin:18px 0 0;font-size:14px;color:var(--dim)}
+.three{list-style:none;margin:0 0 28px;padding:0;display:grid;gap:10px;max-width:520px}
+.three li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--edge);border-radius:16px;background:var(--card)}
+.three .n{width:32px;height:32px;border-radius:50%;border:1px solid var(--gold-hi);color:var(--gold-hi);display:grid;place-items:center;font:700 14px/1 var(--hf)}
+.three b{display:block;font:600 16px/1.25 var(--hf)}.three small{display:block;color:var(--dim);font-size:13px;overflow-wrap:anywhere}
+.ctas .bwx-btn{height:48px;padding:0 22px;font-size:16px}
 @media (max-width:900px){.hero{grid-template-columns:1fr;gap:28px;padding:28px 16px 64px}}
 
 @media (prefers-reduced-motion:reduce){
@@ -207,9 +212,9 @@ html,body{overflow-x:clip}.hero{overflow-x:clip}
 <header class="wrap nav">
   <a class="brand" href="/" aria-label="bDriveX home"><img src="/logo.svg" alt="" width="22" height="30"><span>bDrive<span class="gold">X</span></span></a>
   <nav class="nav-links" aria-label="Main">
-    <a class="hide-s" href="#how">How it works</a>
     <a class="hide-s" href="#status">Status</a>
-    <a class="btn btn-gold" href="https://bwalletx.com/get">Get bWalletX</a>
+    <a href="/browse">Browse</a>
+    <span data-bwx></span>
   </nav>
 </header>
 
@@ -217,11 +222,16 @@ html,body{overflow-x:clip}.hero{overflow-x:clip}
 <div class="wrap hero">
   <div>
     <p class="eyebrow">bDriveX · built on bWalletX</p>
-    <h1>Keep it.<br>Pay as you go.<br><span>Stop any time.</span></h1>
-    <p class="lede">Your files and recordings, stored on Bitcoin and paid for from your own wallet, a little each month. Nobody holds your money up front.</p>
+    <h1>Your Drive files.<br><span>In your name.</span></h1>
+    <p class="lede">Bring in the files you pick from Google Drive, and mint a record of each in your own name: fingerprinted in your browser, locked with your wallet’s keys, private by default.</p>
+    <ol class="three" aria-label="Three steps">
+      <li><span class="n">1</span><span><b>Connect bWalletX</b><small>Your page shows your $name</small></span></li>
+      <li><span class="n">2</span><span><b>Bring in your Drive files</b><small>Only the ones you pick. Or upload, or a Takeout ZIP</small></span></li>
+      <li><span class="n">3</span><span><b>Store or mint</b><small>Private, in your name. 1p a file</small></span></li>
+    </ol>
     <div class="ctas">
-      <a class="btn btn-gold" href="https://bwalletx.com/get">Get bWalletX</a>
-      <a class="btn btn-ghost" href="#status">What works today</a>
+      <span data-bwx="drive"></span>
+      <a class="btn btn-ghost" href="/drive">Open your drive</a>
     </div>
     <p class="hint">Selling things rather than keeping them? That's <a href="https://bstorex.com">bStoreX</a>.</p>
   </div>
@@ -244,7 +254,7 @@ html,body{overflow-x:clip}.hero{overflow-x:clip}
 
 <section id="how">
   <div class="wrap">
-    <p class="kicker">How it works</p>
+    <p class="kicker">Coming: full storage</p>
     <h2>Pay for storage <span class="gold">as long as you like.</span></h2>
     <p class="sub">We keep your files and recordings. Your wallet signs one payment for each month you want, in advance, and each one is time-locked so it can only go out when its month comes round. Stop paying, and we stop storing.</p>
     <div class="grid3">
@@ -277,10 +287,15 @@ html,body{overflow-x:clip}.hero{overflow-x:clip}
     <h2>What works today, and what's next.</h2>
     <p class="sub">Items move to Live when you can use them. We tick them off as they ship.</p>
     <ul class="status">
+      <li><span class="tag live">Live</span><p><b>Your bDriveX page</b> with your bWalletX $name and paymail, at bdrivex.com/u/yourname. <span class="where"><a href="/drive">Open your drive</a></span></p></li>
+      <li><span class="tag live">Live</span><p><b>Bring in files</b> from this device or a Google Takeout ZIP, read in your browser and fingerprinted (sha256). Nothing is uploaded to us.</p></li>
+      <li><span class="tag soon">Coming</span><p><b>Pick files from Google Drive</b> in Google’s own picker. We only get the files you pick (drive.file), never your whole Drive.</p></li>
+      <li><span class="tag live">Live</span><p><b>Mint a private record</b> of each file in your name: name, type, size, fingerprint, date and Drive link, locked with your wallet’s keys. One approval per batch, checked on chain before it says Done. <span class="where">Dry run works now; real minting needs the bWalletX update that pins bDriveX records to bdrivex.com.</span></p></li>
+      <li><span class="tag live">Live</span><p><b>Make one public</b> if you like. <a href="/browse">Browse</a> shows public files only.</p></li>
+      <li><span class="tag soon">Coming</span><p><b>Full encrypted copy on chain.</b> The page shows its cost now; it opens for small files first (up to 1 MB) once large encrypted writes are tested in the wallet.</p></li>
       <li><span class="tag live">Live</span><p><b>Pictures, music and video on chain.</b> Save them on Bitcoin as 1Sat Ordinals from inside bWalletX, kept in your wallet. <span class="where"><a href="https://bwalletx.com/features">bwalletx.com/features</a></span></p></li>
       <li><span class="tag live">Live</span><p><b>Writing saved on chain.</b> Bitcoin Writer saves your documents to the BSV blockchain. <span class="where"><a href="https://bitcoin-writer.vercel.app">Bitcoin Writer</a></span></p></li>
-      <li><span class="tag soon">Coming</span><p><b>Store any file</b> in bDriveX and find it again from any device with your wallet.</p></li>
-      <li><span class="tag soon">Coming</span><p><b>Pay as long as you like:</b> monthly payments your wallet signs in advance, each time-locked to its month. Stop paying and we stop storing.</p></li>
+            <li><span class="tag soon">Coming</span><p><b>Pay as long as you like:</b> monthly payments your wallet signs in advance, each time-locked to its month. Stop paying and we stop storing.</p></li>
       <li><span class="tag soon">Coming</span><p><b>Keep a Space recording</b> when every speaker agrees, encrypted to the people in it, at the cost of whoever keeps it.</p></li>
       <li><span class="tag soon">Coming</span><p><b>Spoken agreements:</b> keep the audio of an agreement both sides said out loud, with its fingerprint sealed on chain.</p></li>
       <li><span class="tag soon">Coming</span><p><b>Share a file</b> with anyone's name, or set a price and sell it through <a href="https://bstorex.com">bStoreX</a>.</p></li>
@@ -311,10 +326,11 @@ html,body{overflow-x:clip}.hero{overflow-x:clip}
     <nav aria-label="Footer">
       <a href="https://bwalletx.com">bWalletX home</a>
       <a href="https://bstorex.com">bStoreX</a>
-      <a href="https://bwalletx.com/privacy">Privacy</a>
-      <a href="https://bwalletx.com/terms">Terms</a>
+      <a href="/browse">Browse</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
     </nav>
-    <span>By The Bitcoin Corporation Ltd.</span>
+    <span>By THE BITCOIN CORPORATION LTD · 16735102</span>
   </div>
 </footer>
 <script>
@@ -325,5 +341,8 @@ setTimeout(function(){requestAnimationFrame(function f(t){s=s||t;var k=Math.min(
 if(!('IntersectionObserver' in window))return go();
 var io=new IntersectionObserver(function(e){if(e[0].isIntersecting){io.disconnect();go()}},{threshold:.4});io.observe(st)})();
 </script>
+<script src="https://unpkg.com/@bwalletx/connect@0.5.0/dist/bwalletx-connect.global.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="/bwx.js"></script>
 </body>
 </html>

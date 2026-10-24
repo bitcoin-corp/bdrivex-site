@@ -1,1 +1,20 @@
-{ "cleanUrls": true }
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/u/:name", "destination": "/drive" }
+  ],
+  "headers": [
+    { "source": "/(drive|u/:name)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }] },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "DENY" }
+      ]
+    }
+  ],
+  "redirects": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "www.bdrivex.com" }], "destination": "https://bdrivex.com/:path*", "permanent": true }
+  ]
+}

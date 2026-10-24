@@ -1,0 +1,12 @@
+{
+  "name": "bdrivex-site",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@bsv/sdk": "2.8.10",
+    "@bwalletx/connect": "0.5.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}
