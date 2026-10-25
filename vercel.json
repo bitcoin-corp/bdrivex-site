@@ -1,1 +1,22 @@
-{ "cleanUrls": true }
+{
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/.well-known/bwalletx-theme.json",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300"
+        }
+      ]
+    }
+  ]
+}
