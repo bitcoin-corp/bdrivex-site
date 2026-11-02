@@ -17,10 +17,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/shell.css">
 </head>
 <body>
+<aside class="xs-strip" aria-label="bWalletX"><a href="https://bwalletx.com"><svg viewBox="23 8 74 100" aria-hidden="true" focusable="false"><defs><linearGradient id="xs-sg" gradientUnits="userSpaceOnUse" x1="0" y1="12" x2="0" y2="105"><stop offset="0" stop-color="#FFE58A"/><stop offset=".55" stop-color="#FFD24D"/><stop offset="1" stop-color="#C98F00"/></linearGradient></defs><path fill="url(#xs-sg)" d="M45 12V72H27V30Z M27 72a33 33 0 1 1 66 0a33 33 0 1 1-66 0Z M45 72a15 15 0 1 0 30 0a15 15 0 1 0-30 0Z"/></svg><span>Part of <b>bWalletX</b></span><span class="xs-go" aria-hidden="true">&rarr;</span></a></aside>
 <header class="wrap nav">
-  <a class="brand" href="/" aria-label="bDriveX home"><img src="/logo.svg" alt="" width="22" height="30"><span>bDrive<span class="gold">X</span></span></a>
+  <a class="xs-brand" href="/" aria-label="bDriveX home"><svg viewBox="23 8 74 100" aria-hidden="true" focusable="false"><path fill="currentColor" d="M45 12V72H27V30Z M27 72a33 33 0 1 1 66 0a33 33 0 1 1-66 0Z M45 72a15 15 0 1 0 30 0a15 15 0 1 0-30 0Z"/></svg><span><span class="xs-sr">b</span><span class="xs-nm">Drive</span><i>X</i></span></a>
 </header>
 
 <main class="wrap">
@@ -45,23 +47,23 @@
           <div class="steps"><span id="p-step"></span><span id="p-rate"></span></div>
         </div>
         <div id="done" hidden>
-          <p class="ok" style="margin:20px 0 0;font-weight:500">Downloaded and checked. Nothing was changed on the way.</p>
-          <p class="dim" style="margin:12px 0 0">SHA-256 of the file</p>
+          <p class="ok done-h">Downloaded and checked. Nothing was changed on the way.</p>
+          <p class="dim mt12">SHA-256 of the file</p>
           <p class="hash" id="sha"></p>
-          <button class="link-btn" type="button" id="again" style="margin-top:12px">Download again</button>
+          <button type="button" id="again" class="link-btn mt12">Download again</button>
         </div>
       </div>
 
       <div id="bad" hidden>
-        <h1 style="font-size:24px" id="bad-h">This link doesn’t work</h1>
-        <p class="muted" id="bad-p" style="margin:10px 0 0"></p>
+        <h1 class="bad-h" id="bad-h">This link doesn’t work</h1>
+        <p class="muted mt10" id="bad-p"></p>
       </div>
     </section>
-    <div class="seal" style="margin-top:16px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffd24d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    <div class="seal mt16">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5FD4E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
       <span>Encrypted end to end. Your browser decrypts the file as it downloads, using the key in the link. bDriveX never sees the key or the file. No wallet or account needed.</span>
     </div>
-    <p class="dim" style="margin:20px 0 0">Want to send files like this? <a href="/send">Try bDriveX</a>.</p>
+    <p class="dim mt20">Want to send files like this? <a href="/send">Try bDriveX</a>.</p>
     <details class="report" id="report" hidden>
       <summary>Report this link</summary>
       <p class="dim">If this file is illegal or harmful, report it and the link is switched off straight away. We review every report.</p>
@@ -82,7 +84,7 @@
 
 <footer>
   <div class="wrap foot">
-    <a class="brand" href="/"><img src="/logo.svg" alt="" width="18" height="24"><span>bDrive<span class="gold">X</span></span></a>
+    <a class="brand" href="/" aria-label="bDriveX home"><svg viewBox="23 8 74 100" aria-hidden="true" focusable="false"><path fill="currentColor" d="M45 12V72H27V30Z M27 72a33 33 0 1 1 66 0a33 33 0 1 1-66 0Z M45 72a15 15 0 1 0 30 0a15 15 0 1 0-30 0Z"/></svg><span>bDrive<i>X</i></span></a>
     <nav aria-label="Footer">
       <a href="https://bwalletx.com/privacy">Privacy</a>
       <a href="https://bwalletx.com/terms">Terms</a>
