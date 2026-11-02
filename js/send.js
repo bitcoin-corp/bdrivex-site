@@ -1,6 +1,6 @@
 // /send: sign in with bWalletX, seal and upload a file, hand back a link; list, re-link and delete your files.
 import { API, SITE } from './config.js';
-import { ApiError, api, fileSource, shareUrl, uploadFile } from './bdx-client.js';
+import { ApiError, api, fileSource, saveKeyWrap, shareUrl, unwrapKey, uploadFile } from './bdx-client.js';
 import { importKey, openMeta, unb64u } from './bdx-crypto.js';
 import { $, bytes, day, esc, eta, ext, store, tabStore, typeOf } from './ui.js';
 
@@ -10,10 +10,21 @@ store.set(K_SESSION, null); // v1 kept it in localStorage; clear any left behind
 let session = tabStore.get(K_SESSION, null);
 if (session && session.expiresAt < Date.now() + 60_000) session = null;
 let handle = null, busy = false, current = null; // current = { hash, key, linkId }
+let wallet = null, files = null, usage = null, unlocking = null, moved = false;
 
 const LOCK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-label="Locked"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
-const keys = () => store.get(K_KEYS, {});
-const saveKey = (hash, key) => store.set(K_KEYS, { ...keys(), [hash]: key });
+// File keys live in the wallet (v1.1): bDriveX keeps each key wrapped by your wallet, and this tab keeps the
+// opened keys in memory only. v1 kept raw keys in localStorage (K_KEYS); those move into the wallet and are cleared.
+const opened = new Map(); // hash -> base64url key
+const names = new Map(); // hash -> {name, type, size}
+const legacy = () => store.get(K_KEYS, {});
+function dropLegacy(hash) {
+  const k = legacy();
+  if (!(hash in k)) return;
+  delete k[hash];
+  store.set(K_KEYS, Object.keys(k).length ? k : null);
+}
+const keyOf = (hash) => opened.get(hash) || legacy()[hash];
 const A = () => api(API, session?.token);
 
 // ---------- sign in
@@ -58,6 +69,7 @@ async function signIn() {
     });
     const v = await a.post('/v1/auth/verify', { identityKey: r.identityKey, nonce: r.nonce, signature: r.signature });
     session = v;
+    wallet = r.wallet;
     tabStore.set(K_SESSION, v);
     show();
   } catch (e) {
@@ -75,11 +87,32 @@ async function signIn() {
 // either way; a 401 (already ended) needs no call.
 function signOut(everywhere, ended) {
   if (session && !ended) A().post(everywhere === true ? '/v1/auth/signout-all' : '/v1/auth/signout', {}).catch(() => {});
-  session = null; handle = null;
+  session = null; handle = null; files = null; moved = false;
+  opened.clear(); names.clear();
+  try { wallet?.close?.(); } catch {}
+  wallet = null;
   tabStore.set(K_SESSION, null);
   try { C?.clearPairing?.(); } catch {}
   show();
 }
+
+// The wallet that signed in. After a reload only the session is left, so find it again: the extension, the in-app
+// browser or this browser's phone pairing answer without a QR. interactive: pair the phone by QR if need be.
+async function getWallet(interactive) {
+  if (wallet) return wallet;
+  let modal = null;
+  try {
+    if (interactive) modal = C.pairingModal({ title: 'Unlock your files' });
+    const r = await C.connectBwalletX(modal ? { pairing: modal } : {});
+    const { publicKey } = await r.wallet.getPublicKey({ identityKey: true });
+    if (publicKey !== session?.identityKey) throw new Error('That’s a different wallet from the one you signed in with.');
+    return (wallet = r.wallet);
+  } finally {
+    try { modal && modal.close(); } catch {}
+  }
+}
+
+const within = (ms, p) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('bWalletX didn’t answer.')), ms))]);
 
 // Any 401 means the session ended: back to the sign-in panel.
 const guard = (e) => { if (e instanceof ApiError && e.status === 401) signOut(false, true); throw e; };
@@ -130,7 +163,14 @@ async function send(file) {
     const r = store.get(K_RESUME, {});
     delete r[fp];
     store.set(K_RESUME, r);
-    saveKey(up.hash, up.key);
+    opened.set(up.hash, up.key);
+    $('#job-step').textContent = 'Keeping the key in your wallet, so your other devices can open this file. Approve in bWalletX…';
+    try {
+      await within(90_000, (async () => saveKeyWrap({ base: API, token: session.token, wallet: await getWallet(false), hash: up.hash, key: up.key }))());
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) guard(e);
+      store.set(K_KEYS, { ...legacy(), [up.hash]: up.key }); // not in the wallet: keep it here, as v1 did, and move it next visit
+    }
     $('#job-step').textContent = 'Making your link…';
     const link = await A().post('/v1/links', { hash: up.hash, ttl: ttlValue() }).catch(guard);
     current = { hash: up.hash, key: up.key, linkId: link.id };
@@ -186,18 +226,29 @@ function reset() {
 // ---------- your files
 
 async function nameOf(f) {
-  const key = keys()[f.hash];
+  if (names.has(f.hash)) return names.get(f.hash);
+  const key = keyOf(f.hash);
   if (!key || !f.meta) return null;
-  try { return (await openMeta(await importKey(unb64u(key)), f.meta)).meta; } catch { return null; }
+  try {
+    const { meta } = await openMeta(await importKey(unb64u(key)), f.meta);
+    names.set(f.hash, meta);
+    return meta;
+  } catch { return null; }
 }
 
 async function loadFiles() {
-  let data;
-  try { data = await A().get('/v1/files').catch(guard); } catch { return; }
-  const { files, usage } = data;
+  try { ({ files, usage } = await A().get('/v1/files').catch(guard)); } catch { return; }
+  await draw();
+  unlock(false);
+}
+
+async function draw() {
+  if (!files) return;
   $('#usage-t').textContent = `${bytes(usage.bytes)} of ${bytes(usage.quota)} used`;
   $('#usage-bar').style.width = Math.min(100, (usage.bytes / usage.quota) * 100) + '%';
   const ul = $('#files');
+  const locked = files.filter((f) => !keyOf(f.hash) && f.keyWrap).length;
+  $('#unlock-row').hidden = !locked || !!unlocking;
   if (!files.length) { ul.innerHTML = '<li class="empty" style="display:block">Nothing here yet. Files you send show up here.</li>'; return; }
   const metas = await Promise.all(files.map(nameOf));
   const t = Date.now();
@@ -220,21 +271,62 @@ async function loadFiles() {
   }).join('');
 }
 
+// Open the keys your wallet wrapped, and move any v1 keys from this browser into the wallet (once per tab).
+// Quietly on load; interactive (the Unlock button) may pair the phone by QR.
+function unlock(interactive) {
+  if (unlocking || !files || !session) return unlocking;
+  const shut = files.filter((f) => !keyOf(f.hash) && f.keyWrap);
+  const move = moved ? [] : files.filter((f) => !f.keyWrap && legacy()[f.hash]);
+  if (!shut.length && !move.length) return null;
+  const note = $('#keys-note'), err = $('#unlock-err');
+  err.hidden = true;
+  unlocking = (async () => {
+    let w;
+    try { w = await getWallet(interactive); } catch (e) {
+      if (interactive && !(e && e.name === 'AbortError')) { err.textContent = (e && e.message) || 'That didn’t work. Try again.'; err.hidden = false; }
+      return;
+    }
+    $('#unlock-row').hidden = true;
+    if (shut.length) note.textContent = 'Opening your files with bWalletX. Approve if it asks.';
+    for (const f of shut) {
+      try { opened.set(f.hash, await unwrapKey(w, f.hash, f.keyWrap)); } catch {}
+    }
+    if (move.length) {
+      moved = true;
+      note.textContent = `Moving ${move.length === 1 ? 'a file key' : move.length + ' file keys'} from this browser into your wallet, so your other devices can open ${move.length === 1 ? 'it' : 'them'}. Approve in bWalletX.`;
+      for (const f of move) {
+        const key = legacy()[f.hash];
+        try {
+          await saveKeyWrap({ base: API, token: session.token, wallet: w, hash: f.hash, key });
+          opened.set(f.hash, key);
+          dropLegacy(f.hash);
+        } catch (e) { if (e instanceof ApiError && e.status === 401) return signOut(false, true); break; } // declined: try next visit
+      }
+    }
+  })().finally(() => {
+    unlocking = null;
+    note.textContent = KEYS_NOTE;
+    draw();
+  });
+  return unlocking;
+}
+const KEYS_NOTE = 'Each file’s key is kept in your wallet, so you can open your files on any device you sign in on. bDriveX only ever sees scrambled bytes.';
+
 async function onFilesClick(e) {
   const b = e.target.closest('button[data-act]');
   if (!b) return;
   const { act, hash, link } = b.dataset;
   try {
-    if (act === 'copy') return copy(shareUrl(SITE, link, keys()[hash]), b);
+    if (act === 'copy') return copy(shareUrl(SITE, link, keyOf(hash)), b);
     if (act === 'new') {
       const l = await A().post('/v1/links', { hash }).catch(guard); // 30 days
-      await copy(shareUrl(SITE, l.id, keys()[hash]), b);
+      await copy(shareUrl(SITE, l.id, keyOf(hash)), b);
     }
     if (act === 'off') await A().del(`/v1/links/${link}`).catch(guard);
     if (act === 'del') {
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Delete for good?'; setTimeout(() => { b.dataset.sure = ''; b.textContent = 'Delete'; }, 4000); return; }
       await A().del(`/v1/files/${hash}`).catch(guard);
-      const k = keys(); delete k[hash]; store.set(K_KEYS, k);
+      opened.delete(hash); names.delete(hash); dropLegacy(hash);
       if (current?.hash === hash) reset();
     }
     loadFiles();
@@ -254,5 +346,6 @@ $('#copy').onclick = (e) => copy($('#url').value, e.currentTarget);
 $('#ttl').onchange = relink;
 $('#another').onclick = reset;
 $('#files').addEventListener('click', onFilesClick);
+$('#unlock').onclick = () => unlock(true);
 addEventListener('beforeunload', (e) => { if (busy) { e.preventDefault(); e.returnValue = ''; } });
 show();

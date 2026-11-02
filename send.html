@@ -91,7 +91,12 @@
       </div>
       <div class="usage"><div class="bar" aria-hidden="true"><span id="usage-bar"></span></div></div>
       <ul class="files" id="files"></ul>
-      <p class="dim" style="margin:16px 0 0">Names and keys are kept in this browser. On another device a file shows as locked until you open its link there.</p>
+      <div class="row" id="unlock-row" style="margin-top:14px" hidden>
+        <span class="dim">Some files are locked on this device.</span>
+        <button class="btn btn-ghost btn-sm" type="button" id="unlock">Unlock with bWalletX</button>
+      </div>
+      <p class="err" id="unlock-err" role="alert" hidden></p>
+      <p class="dim" style="margin:16px 0 0" id="keys-note" aria-live="polite">Each file’s key is kept in your wallet, so you can open your files on any device you sign in on. bDriveX only ever sees scrambled bytes.</p>
       <p class="dim" style="margin:8px 0 0">Signed in somewhere you shouldn’t be? <button class="link-btn" type="button" id="signout-all">Sign out everywhere</button></p>
     </section>
   </div>

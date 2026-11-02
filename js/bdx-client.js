@@ -206,3 +206,23 @@ export async function downloadLink({ base, id, link, sink, onProgress, signal })
   await sink.close?.();
   return { sha256: hex(hash.digest()) };
 }
+
+/**
+ * v1.1: the owner's wallet wraps each file key to itself (BRC-2 encrypt, counterparty self, key ID = the file's
+ * hash) and bDriveX keeps the wrap beside the file, so any device signed in to that wallet can open its files.
+ * Protocol security level 1: the wallet asks once per site, not once per file. `wallet` is any BRC-100 wallet.
+ */
+export const KEY_PROTOCOL = [1, 'bdrivex file key'];
+export async function wrapKey(wallet, hash, key) {
+  const { ciphertext } = await wallet.encrypt({ plaintext: Array.from(unb64u(key)), protocolID: KEY_PROTOCOL, keyID: hash, counterparty: 'self' });
+  return b64u(Uint8Array.from(ciphertext));
+}
+export async function unwrapKey(wallet, hash, keyWrap) {
+  const { plaintext } = await wallet.decrypt({ ciphertext: Array.from(unb64u(keyWrap)), protocolID: KEY_PROTOCOL, keyID: hash, counterparty: 'self' });
+  if (plaintext.length !== 32) throw new Error('That isn’t a bDriveX file key.');
+  return b64u(Uint8Array.from(plaintext));
+}
+/** Wrap a file's key with the wallet and hand the wrap to bDriveX. */
+export async function saveKeyWrap({ base, token, wallet, hash, key }) {
+  await api(base, token).call('PUT', `/v1/files/${hash}/key`, { json: { keyWrap: await wrapKey(wallet, hash, key) } });
+}
