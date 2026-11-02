@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Send a file · bDriveX</title>
-<meta name="description" content="Send any file with bDriveX. It is encrypted on your device before it leaves, and only people with the link can open it. Sign in with bWalletX.">
+<meta name="description" content="Send any file with bDriveX. It is encrypted on your device before it leaves, and only the person you send it to can open it. Sign in with bWalletX.">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -26,13 +26,13 @@
   <div class="head">
     <p class="eyebrow">bDriveX Send <span class="beta">Beta</span></p>
     <h1>Send a file</h1>
-    <p>It’s encrypted on this device before it leaves. The link carries the key, so only the people you give it to can open it. Not even we can.</p>
+    <p>It’s encrypted on this device before it leaves. Send it to one person by their $handle and only their wallet can open it, or make a link anyone can open. Not even we can.</p>
     <p class="beta-note" role="note"><b>Beta: no backups yet.</b> Keep your own copy of anything you upload.</p>
   </div>
 
   <section class="panel gate" id="gate" aria-labelledby="gate-h">
     <h2 id="gate-h">Sign in with bWalletX</h2>
-    <p>Your wallet is your account. No email, no password. The people you send to don’t need a wallet.</p>
+    <p>Your wallet is your account. No email, no password. The person you send to opens the file with their bWalletX.</p>
     <button class="btn btn-gold" id="signin" type="button">Sign in with bWalletX</button>
     <p class="err" id="gate-err" role="alert" hidden></p>
     <p class="dim" style="margin-top:20px">No wallet yet? <a href="https://bwalletx.com/get">Get bWalletX</a>, it’s free.</p>
@@ -61,24 +61,53 @@
           <span class="dim">It carries on from where it stopped.</span>
         </div>
 
-        <div class="share" id="share" hidden>
-          <div class="url">
-            <input id="url" readonly aria-label="Share link" spellcheck="false">
-            <button class="btn btn-gold" id="copy" type="button">Copy link</button>
-          </div>
+        <form class="linkform" id="linkform" hidden novalidate>
+          <fieldset class="aud">
+            <legend>Who is it for?</legend>
+            <label class="opt">
+              <input type="radio" name="aud" value="one" checked>
+              <span><b>Only this person</b><small>They sign in with bWalletX to open it. Nobody else can, even with the link.</small></span>
+            </label>
+            <div class="to" id="to-row">
+              <input id="to" type="text" inputmode="email" placeholder="$handle or paymail" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Their $handle or paymail" aria-describedby="to-who">
+              <button class="btn btn-ghost btn-sm" id="to-find" type="button">Find</button>
+            </div>
+            <p class="to-who" id="to-who" aria-live="polite"></p>
+            <label class="opt">
+              <input type="radio" name="aud" value="any">
+              <span><b>Anyone with the link</b><small>Anyone who has this link can open it. The key is in the link.</small></span>
+            </label>
+          </fieldset>
           <div class="opts">
             <label for="ttl">Link works for</label>
             <select id="ttl">
               <option value="86400">1 day</option>
               <option value="604800">7 days</option>
               <option value="2592000" selected>30 days</option>
+              <option value="date">Until a date…</option>
             </select>
-            <span class="dim" id="ttl-note"></span>
+            <input type="date" id="ttl-date" aria-label="Link works until" hidden>
+          </div>
+          <div class="row make-row">
+            <button class="btn btn-gold" id="make" type="submit" disabled>Make link</button>
+            <span class="dim" id="make-note"></span>
+          </div>
+          <p class="err" id="link-err" role="alert" hidden></p>
+        </form>
+
+        <div class="share" id="share" hidden>
+          <div class="url">
+            <input id="url" readonly aria-label="Share link" spellcheck="false">
+            <button class="btn btn-gold" id="copy" type="button">Copy link</button>
+          </div>
+          <p class="aud-line" id="aud-line"></p>
+          <div class="opts">
+            <button class="link-btn" type="button" id="change">Change who or how long</button>
             <button class="link-btn" type="button" id="another" style="margin-left:auto">Send another file</button>
           </div>
           <div class="seal">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5FD4E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-            <span>The key is the part after <b>#</b> in the link. Browsers never send it to a server, so bDriveX only holds scrambled bytes. Anyone with the whole link can download the file.</span>
+            <span id="seal-t"></span>
           </div>
         </div>
       </div>

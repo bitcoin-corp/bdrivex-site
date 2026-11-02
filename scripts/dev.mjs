@@ -1,5 +1,5 @@
 // Local preview of the static site with Vercel's cleanUrls and the /s/:id rewrite. Binds 127.0.0.1 only.
-//   node scripts/dev.mjs   -> http://127.0.0.1:5173
+//   node scripts/dev.mjs   -> http://127.0.0.1:5173 (PORT=5174 node scripts/dev.mjs for another port)
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
@@ -26,4 +26,4 @@ createServer(async (req, res) => {
   if (!(await isFile(f))) { res.writeHead(404); return res.end('Not found'); }
   res.writeHead(200, { 'content-type': TYPES[extname(f)] || 'application/octet-stream', 'cache-control': 'no-store', ...extra });
   res.end(await readFile(f));
-}).listen(5173, '127.0.0.1', () => console.log('bdrivex-site on http://127.0.0.1:5173'));
+}).listen(Number(process.env.PORT || 5173), '127.0.0.1', function () { console.log(`bdrivex-site on http://127.0.0.1:${this.address().port}`); });

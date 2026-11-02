@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A file for you · bDriveX</title>
 <meta name="description" content="Someone sent you a file with bDriveX. It is decrypted in your browser as it downloads.">
+<meta name="bdx-connect" content="https://unpkg.com/@bwalletx/connect@0.5.4/dist/bwalletx-connect.global.js" data-integrity="sha384-XcXqSpSaaJDaG6j9SOt91Q/jyCgXXsLTkjLKUUtVBjQHTi8qRDbhD+hviUB5soO8">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
@@ -30,6 +31,17 @@
     <p class="eyebrow">A file for you</p>
     <section class="panel" aria-live="polite">
       <div id="loading" class="muted">Opening the link…</div>
+
+      <div id="bound" hidden>
+        <h1 class="bound-h" id="b-h">A file sent to you</h1>
+        <p class="muted mt10" id="b-p">Sign in with bWalletX to open it. Only the wallet it was sent to can.</p>
+        <ul class="facts">
+          <li><span>Size</span><span id="b-size"></span></li>
+          <li><span>Link works</span><span id="b-until"></span></li>
+        </ul>
+        <button class="btn btn-gold" id="b-signin" type="button">Sign in with bWalletX to open</button>
+        <p class="err" id="b-err" role="alert" hidden></p>
+      </div>
 
       <div id="file" hidden>
         <div class="job">
@@ -57,11 +69,15 @@
       <div id="bad" hidden>
         <h1 class="bad-h" id="bad-h">This link doesn’t work</h1>
         <p class="muted mt10" id="bad-p"></p>
+        <div class="row mt16" id="bad-acts" hidden>
+          <button class="btn btn-ghost btn-sm" type="button" id="b-other">Sign in with another wallet</button>
+          <button class="link-btn" type="button" id="b-out">Sign out</button>
+        </div>
       </div>
     </section>
     <div class="seal mt16">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5FD4E3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-      <span>Encrypted end to end. Your browser decrypts the file as it downloads, using the key in the link. bDriveX never sees the key or the file. No wallet or account needed.</span>
+      <span id="seal-t">Encrypted end to end. Your browser decrypts the file as it downloads, using the key in the link. bDriveX never sees the key or the file. No wallet or account needed.</span>
     </div>
     <p class="dim mt20">Want to send files like this? <a href="/send">Try bDriveX</a>.</p>
     <details class="report" id="report" hidden>

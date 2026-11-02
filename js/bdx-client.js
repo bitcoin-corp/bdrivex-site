@@ -138,6 +138,7 @@ export function parseShare(hash) {
 /** What a share link holds: { size, createdAt, expiresAt, meta: {name, type, size} }. No wallet needed. */
 export async function openLink({ base, id, key }) {
   const info = await api(base).get(`/v1/s/${encodeURIComponent(id)}`);
+  if (info.bound) throw new ApiError(403, 'This file was sent to one person. They sign in with bWalletX to open it.', info);
   const ck = await importKey(unb64u(key));
   const { meta, header } = await openMeta(ck, info.meta);
   return { ...info, meta, header, ck };
@@ -148,11 +149,13 @@ export async function openLink({ base, id, key }) {
  * Resumes with Range after a dropped connection. Returns { sha256 } of the plaintext, for checking against a
  * published hash (the GCM tags already prove nothing was changed).
  */
-export async function downloadLink({ base, id, link, sink, onProgress, signal }) {
+export async function downloadLink({ base, id, link, sink, onProgress, signal, token = link.token }) {
   const total = link.size;
   const plainSize = plainSizeOf(total);
   const nSeg = segmentCount(plainSize);
   const hash = sha256.create();
+  // A link sent to one person tells its recipient the file's hash (its wrap is bound to it): check the bytes match.
+  const blobHash = link.hash ? sha256.create() : null;
   let buf = new Uint8Array(0), got = 0, seg = 0, header = null;
 
   const take = async () => {
@@ -176,9 +179,9 @@ export async function downloadLink({ base, id, link, sink, onProgress, signal })
 
   for (let attempt = 0; got < total; ) {
     try {
-      const r = await fetch(`${base}/v1/s/${encodeURIComponent(id)}/blob`, {
-        signal, headers: got ? { range: `bytes=${got}-` } : {},
-      });
+      const headers = got ? { range: `bytes=${got}-` } : {};
+      if (token) headers.authorization = `Bearer ${token}`;
+      const r = await fetch(`${base}/v1/s/${encodeURIComponent(id)}/blob`, { signal, headers });
       if (!r.ok) {
         let j = null;
         try { j = await r.json(); } catch {}
@@ -190,6 +193,7 @@ export async function downloadLink({ base, id, link, sink, onProgress, signal })
         const { done, value } = await reader.read();
         if (done) break;
         got += value.length;
+        blobHash?.update(value);
         const joined = new Uint8Array(buf.length + value.length);
         joined.set(buf, 0); joined.set(value, buf.length);
         buf = joined;
@@ -203,6 +207,7 @@ export async function downloadLink({ base, id, link, sink, onProgress, signal })
     }
   }
   if (seg !== nSeg || buf.length) throw new Error('The download ended early. Try again.');
+  if (blobHash && hex(blobHash.digest()) !== link.hash) throw new Error('This file doesn’t match its link.');
   await sink.close?.();
   return { sha256: hex(hash.digest()) };
 }
@@ -225,4 +230,64 @@ export async function unwrapKey(wallet, hash, keyWrap) {
 /** Wrap a file's key with the wallet and hand the wrap to bDriveX. */
 export async function saveKeyWrap({ base, token, wallet, hash, key }) {
   await api(base, token).call('PUT', `/v1/files/${hash}/key`, { json: { keyWrap: await wrapKey(wallet, hash, key) } });
+}
+
+/**
+ * v1.2: send to one person. The sender's wallet wraps the file key for the recipient's identity key (BRC-2 encrypt,
+ * protocol [2,'bdrivex share'], key ID '<file hash>.<link id>', counterparty = the recipient), so only that wallet
+ * can open it, and only for that file and that link. The link carries no key: the recipient signs in with bWalletX,
+ * gets the wrap from bDriveX and decrypts it with counterparty = the sender. Security level 2: the derivation is
+ * bound to the counterparty, so each recipient gets keys no one else's wallet can derive.
+ */
+export const SHARE_PROTOCOL = [2, 'bdrivex share'];
+const IDENTITY_KEY = /^0[23][0-9a-f]{64}$/;
+const shareKeyID = (hash, linkId) => `${hash}.${linkId}`;
+export async function wrapForRecipient(wallet, { hash, linkId, key, recipient }) {
+  if (!IDENTITY_KEY.test(recipient)) throw new Error('That isn’t an identity key.');
+  const { ciphertext } = await wallet.encrypt({ plaintext: Array.from(unb64u(key)), protocolID: SHARE_PROTOCOL, keyID: shareKeyID(hash, linkId), counterparty: recipient });
+  return b64u(Uint8Array.from(ciphertext));
+}
+export async function unwrapFromSender(wallet, { hash, linkId, wrap, senderKey }) {
+  if (!IDENTITY_KEY.test(senderKey)) throw new Error('This link’s sender key is not valid.');
+  const { plaintext } = await wallet.decrypt({ ciphertext: Array.from(unb64u(wrap)), protocolID: SHARE_PROTOCOL, keyID: shareKeyID(hash, linkId), counterparty: senderKey });
+  if (plaintext.length !== 32) throw new Error('That isn’t a bDriveX file key.');
+  return b64u(Uint8Array.from(plaintext));
+}
+
+/**
+ * Make a link. With `recipient` (identity key) the link is bound to that wallet: it is made first, then the wallet
+ * wraps the key with the new link's id and the wrap is handed to bDriveX. If the wallet declines, the half-made link
+ * is switched off. Returns { id, createdAt, expiresAt, bound, url }.
+ */
+export async function makeLink({ base, token, site, hash, key, ttl = null, recipient = null, recipientLabel = null, wallet = null }) {
+  const a = api(base, token);
+  if (!recipient) {
+    const l = await a.post('/v1/links', { hash, ttl });
+    return { ...l, url: shareUrl(site, l.id, key) };
+  }
+  const l = await a.post('/v1/links', { hash, ttl, recipient, ...(recipientLabel ? { recipientLabel } : {}) });
+  try {
+    const recipientWrap = await wrapForRecipient(wallet, { hash, linkId: l.id, key, recipient });
+    await a.call('PUT', `/v1/links/${l.id}/recipient`, { json: { recipient, recipientWrap } });
+  } catch (e) {
+    await a.del(`/v1/links/${l.id}`).catch(() => {});
+    throw e;
+  }
+  return { ...l, url: boundUrl(site, l.id) };
+}
+/** A link sent to one person has no key in it, and needs none. */
+export const boundUrl = (site, linkId) => `${site.replace(/\/$/, '')}/s/${linkId}`;
+
+/** A share link's public view, signed in or not. Bound links say { bound, forYou, from, size, ... }. */
+export const linkInfo = ({ base, id, token }) => api(base, token).get(`/v1/s/${encodeURIComponent(id)}`);
+
+/** Open a link sent to you: unwrap its key with your wallet, then read its name. Same shape as openLink. */
+export async function openBoundLink({ base, id, token, wallet }) {
+  const info = await linkInfo({ base, id, token });
+  if (!info.bound) throw new Error('This link isn’t for one person.');
+  if (!info.forYou) throw new ApiError(403, 'This file was sent to someone else.', info);
+  const key = await unwrapFromSender(wallet, { hash: info.hash, linkId: id, wrap: info.recipientWrap, senderKey: info.senderKey });
+  const ck = await importKey(unb64u(key));
+  const { meta, header } = await openMeta(ck, info.meta);
+  return { ...info, meta, header, ck, token };
 }

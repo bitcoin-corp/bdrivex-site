@@ -1,7 +1,10 @@
-// /send: sign in with bWalletX, seal and upload a file, hand back a link; list, re-link and delete your files.
+// /send: sign in with bWalletX, seal and upload a file, say who it's for, hand back a link; list, re-link and delete
+// your files. v1.2: a link is for one person by default (their wallet unwraps the key); "anyone with the link" is a
+// choice the sender makes.
 import { API, SITE } from './config.js';
-import { ApiError, api, fileSource, saveKeyWrap, shareUrl, unwrapKey, uploadFile } from './bdx-client.js';
+import { ApiError, api, boundUrl, fileSource, makeLink, saveKeyWrap, shareUrl, unwrapKey, uploadFile } from './bdx-client.js';
 import { importKey, openMeta, unb64u } from './bdx-crypto.js';
+import { resolveRecipient, shortKey } from './paymail.js';
 import { $, bytes, day, esc, eta, ext, store, tabStore, typeOf } from './ui.js';
 
 const C = window.bWalletXConnect;
@@ -9,7 +12,8 @@ const K_SESSION = 'bdx:session', K_KEYS = 'bdx:keys', K_RESUME = 'bdx:resume';
 store.set(K_SESSION, null); // v1 kept it in localStorage; clear any left behind
 let session = tabStore.get(K_SESSION, null);
 if (session && session.expiresAt < Date.now() + 60_000) session = null;
-let handle = null, busy = false, current = null; // current = { hash, key, linkId }
+let handle = null, busy = false, current = null; // current = { hash, key, name, linkId }
+let recipient = null, finding = null; // recipient = { label, paymail, identityKey } once looked up
 let wallet = null, files = null, usage = null, unlocking = null, moved = false;
 
 const LOCK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-label="Locked"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
@@ -119,8 +123,31 @@ const guard = (e) => { if (e instanceof ApiError && e.status === 401) signOut(fa
 
 // ---------- send
 
-const ttlValue = () => ($('#ttl').value ? Number($('#ttl').value) : null);
-const ttlNote = (expiresAt) => { $('#ttl-note').textContent = `until ${day(expiresAt)}`; };
+const DAY = 86400, MAX_TTL = 30 * DAY;
+const audience = () => document.querySelector('input[name=aud]:checked').value; // 'one' | 'any'
+const pad = (n) => String(n).padStart(2, '0');
+const isoDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Seconds the link should work: 1, 7 or 30 days, or to the end of a chosen day (at most 30 days; the server enforces it).
+function ttlValue() {
+  const v = $('#ttl').value;
+  if (v !== 'date') return Number(v);
+  const d = $('#ttl-date').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+  const [y, m, dd] = d.split('-').map(Number);
+  const end = new Date(y, m - 1, dd, 23, 59, 59).getTime();
+  return Math.max(60, Math.min(MAX_TTL, Math.floor((end - Date.now()) / 1000)));
+}
+function onTtl() {
+  const date = $('#ttl').value === 'date', el = $('#ttl-date');
+  el.hidden = !date;
+  if (date) {
+    const t = new Date();
+    el.min = isoDay(t);
+    el.max = isoDay(new Date(t.getTime() + MAX_TTL * 1000));
+    if (!el.value) el.value = isoDay(new Date(t.getTime() + 14 * DAY * 1000));
+  }
+  canMake();
+}
 
 function progress(sent, total, startedAt) {
   const pc = total ? Math.floor((sent / total) * 100) : 100;
@@ -128,6 +155,53 @@ function progress(sent, total, startedAt) {
   $('#job-bar').setAttribute('aria-valuenow', String(pc));
   $('#job-step').textContent = `Encrypting and uploading · ${pc}%`;
   $('#job-rate').textContent = eta(sent, total, startedAt);
+}
+
+// ---- who it's for: look the person up as they type (in this browser, straight from their paymail service)
+function drawTo(msg, bad) {
+  const el = $('#to-who');
+  el.classList.toggle('bad', !!bad);
+  if (msg != null) { el.textContent = msg; return; }
+  if (!recipient) { el.textContent = ''; return; }
+  const you = recipient.identityKey === session?.identityKey ? ' (that’s you)' : '';
+  el.innerHTML = `Sending to <b>${esc(recipient.label)}</b>${you} · <span class="k" title="${esc(recipient.identityKey)}">${esc(shortKey(recipient.identityKey))}</span>`;
+}
+let findTimer = null;
+function findSoon() {
+  clearTimeout(findTimer);
+  recipient = null;
+  drawTo('');
+  canMake();
+  if ($('#to').value.trim().length >= 2) findTimer = setTimeout(find, 600);
+}
+async function find() {
+  clearTimeout(findTimer);
+  const typed = $('#to').value.trim();
+  if (!typed) { drawTo('Type their $handle or paymail.', true); return null; }
+  if (recipient && finding === typed) return recipient;
+  finding = typed;
+  drawTo('Looking them up…');
+  try {
+    const r = await resolveRecipient(typed);
+    if ($('#to').value.trim() !== typed) return null; // they kept typing
+    recipient = r;
+    drawTo();
+    return r;
+  } catch (e) {
+    if ($('#to').value.trim() === typed) { recipient = null; drawTo(e.message, true); }
+    return null;
+  } finally { canMake(); }
+}
+
+function canMake() {
+  const one = audience() === 'one';
+  $('#to-row').hidden = !one;
+  $('#to-who').hidden = !one;
+  const ready = !!current?.hash && !busy;
+  const ok = ready && (!one || !!recipient) && ttlValue() != null;
+  $('#make').disabled = !ok;
+  $('#make').textContent = one ? (recipient ? `Send to ${recipient.label}` : 'Make link') : 'Make a link anyone can open';
+  $('#make-note').textContent = !ready && !current?.hash ? 'You can choose while it uploads.' : '';
 }
 
 const MAX_FILE = 2 * 1024 ** 3;
@@ -142,13 +216,17 @@ async function send(file) {
   $('#drop').hidden = true;
   $('#job').hidden = false;
   $('#share').hidden = true;
+  $('#linkform').hidden = false;
+  $('#link-err').hidden = true;
   $('#job-err').hidden = true;
   $('#job-retry').hidden = true;
+  $('#job-bar').hidden = false;
   $('#job-ext').textContent = ext(file.name);
   $('#job-name').textContent = file.name;
   $('#job-size').textContent = bytes(file.size);
   $('#job-rate').textContent = '';
   progress(0, 1, Date.now());
+  canMake();
 
   const fp = `${file.name}|${file.size}|${file.lastModified}`;
   const resumes = store.get(K_RESUME, {});
@@ -171,18 +249,12 @@ async function send(file) {
       if (e instanceof ApiError && e.status === 401) guard(e);
       store.set(K_KEYS, { ...legacy(), [up.hash]: up.key }); // not in the wallet: keep it here, as v1 did, and move it next visit
     }
-    $('#job-step').textContent = 'Making your link…';
-    const link = await A().post('/v1/links', { hash: up.hash, ttl: ttlValue() }).catch(guard);
-    current = { hash: up.hash, key: up.key, linkId: link.id };
-    $('#url').value = shareUrl(SITE, link.id, up.key);
-    ttlNote(link.expiresAt);
-    $('#job-step').innerHTML = '<span class="ok">Uploaded and encrypted.</span>';
+    current = { hash: up.hash, key: up.key, name: file.name, linkId: null };
+    $('#job-step').innerHTML = '<span class="ok">Uploaded and encrypted.</span> Now say who it’s for.';
     $('#job-rate').textContent = `${bytes(file.size)} in ${Math.max(1, Math.round((Date.now() - startedAt) / 1000))} s`;
-    $('#share').hidden = false;
-    $('#url').focus();
-    $('#url').select();
     loadFiles();
   } catch (e) {
+    $('#linkform').hidden = true;
     $('#job-err').textContent = (e && e.message) || 'The upload stopped.';
     $('#job-err').hidden = false;
     $('#job-step').textContent = 'Stopped';
@@ -192,6 +264,54 @@ async function send(file) {
     }
   } finally {
     busy = false;
+    canMake();
+  }
+}
+
+// Make the link the sender chose. For one person, their wallet wraps the key for that person's identity key; for
+// anyone, the key goes in the link. Changing who or how long makes a new link and switches the old one off.
+async function make(e) {
+  e?.preventDefault();
+  if (!current?.hash || busy) return;
+  const one = audience() === 'one';
+  const err = $('#link-err');
+  err.hidden = true;
+  const ttl = ttlValue();
+  if (ttl == null) { err.textContent = 'Choose the date the link stops working.'; err.hidden = false; return; }
+  const to = one ? await find() : null;
+  if (one && !to) return;
+  busy = true;
+  const b = $('#make');
+  b.disabled = true;
+  try {
+    let w = null;
+    if (one) {
+      b.textContent = 'Approve in bWalletX…';
+      w = await getWallet(true);
+    } else b.textContent = 'Making your link…';
+    const link = await within(120_000, makeLink({
+      base: API, token: session.token, site: SITE, hash: current.hash, key: current.key, ttl,
+      recipient: one ? to.identityKey : null, recipientLabel: one ? to.label : null, wallet: w,
+    })).catch(guard);
+    if (current.linkId) await A().del(`/v1/links/${current.linkId}`).catch(() => {});
+    current.linkId = link.id;
+    $('#url').value = link.url;
+    $('#aud-line').innerHTML = `${one ? `Only <b>${esc(to.label)}</b> can open this` : '<b>Anyone who has this link</b> can open it'} · Link works until ${esc(day(link.expiresAt))}`;
+    $('#seal-t').innerHTML = one
+      ? `There’s no key in this link. ${esc(to.label)} signs in with bWalletX and their wallet unlocks the file. Anyone else who gets the link sees only that it was sent to someone else. bDriveX only holds scrambled bytes.`
+      : 'The key is the part after <b>#</b> in the link. Browsers never send it to a server, so bDriveX only holds scrambled bytes. Anyone with the whole link can download the file.';
+    $('#job-step').innerHTML = `<span class="ok">Your link is ready.</span> ${one ? `Send it to ${esc(to.label)} any way you like.` : 'Anyone you give it to can open the file.'}`;
+    $('#linkform').hidden = true;
+    $('#share').hidden = false;
+    $('#url').focus();
+    $('#url').select();
+    loadFiles();
+  } catch (e2) {
+    err.textContent = e2 && e2.name === 'AbortError' ? 'You closed bWalletX before it finished. Try again.' : (e2 && e2.message) || 'That didn’t work. Try again.';
+    err.hidden = false;
+  } finally {
+    busy = false;
+    canMake();
   }
 }
 
@@ -202,18 +322,32 @@ async function copy(text, btn) {
   setTimeout(() => { btn.textContent = t; }, 1600);
 }
 
-// Changing how long the link works makes a new link and switches the old one off.
-async function relink() {
-  if (!current) return;
-  const old = current.linkId;
-  try {
-    const link = await A().post('/v1/links', { hash: current.hash, ttl: ttlValue() }).catch(guard);
-    await A().del(`/v1/links/${old}`).catch(() => {});
-    current.linkId = link.id;
-    $('#url').value = shareUrl(SITE, link.id, current.key);
-    ttlNote(link.expiresAt);
-    loadFiles();
-  } catch (e) { $('#job-err').textContent = e.message; $('#job-err').hidden = false; }
+function change() {
+  $('#share').hidden = true;
+  $('#linkform').hidden = false;
+  canMake();
+}
+
+// New link for a file already in the list: the same who-and-how-long step as a fresh upload.
+function relinkFile(hash) {
+  const m = names.get(hash), key = keyOf(hash);
+  if (!m || !key || busy) return;
+  current = { hash, key, name: m.name, linkId: null };
+  $('#drop').hidden = true;
+  $('#job').hidden = false;
+  $('#job-ext').textContent = ext(m.name);
+  $('#job-name').textContent = m.name;
+  $('#job-size').textContent = bytes(m.size);
+  $('#job-bar').hidden = true;
+  $('#job-step').textContent = 'A new link for this file. Say who it’s for.';
+  $('#job-rate').textContent = '';
+  $('#job-err').hidden = true;
+  $('#job-retry').hidden = true;
+  $('#share').hidden = true;
+  $('#link-err').hidden = true;
+  $('#linkform').hidden = false;
+  canMake();
+  $('#job').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function reset() {
@@ -257,7 +391,11 @@ async function draw() {
     const live = f.links.filter((l) => !l.revokedAt && !l.reported && (!l.expiresAt || l.expiresAt > t));
     const downloads = f.links.reduce((n, l) => n + l.downloads, 0);
     const reported = f.links.filter((l) => l.reported).length;
-    const lk = live.map((l) => `<span>Link from ${day(l.createdAt)} · until ${day(l.expiresAt)} · ${m ? `<button class="link-btn" data-act="copy" data-link="${l.id}" data-hash="${f.hash}">Copy</button> ` : ''}<button class="link-btn danger" data-act="off" data-link="${l.id}">Switch off</button></span>`).join('');
+    const lk = live.map((l) => {
+      const who = l.bound ? `Only ${esc(l.recipientLabel || shortKey(l.recipient))}` : 'Anyone with the link';
+      const canCopy = l.bound ? l.ready : !!m; // a link for one person has no key in it, so it can always be copied
+      return `<span><span class="aud-t">${who}</span> · until ${day(l.expiresAt)}${l.bound && !l.ready ? ' · not finished' : ''} · ${canCopy ? `<button class="link-btn" data-act="copy" data-link="${l.id}" data-hash="${f.hash}"${l.bound ? ' data-bound="1"' : ''}>Copy</button> ` : ''}<button class="link-btn danger" data-act="off" data-link="${l.id}">Switch off</button></span>`;
+    }).join('');
     return `<li>
       <span class="ext${m ? '' : ' lock'}">${m ? esc(ext(m.name)) : LOCK}</span>
       <b>${m ? esc(m.name) : 'Locked file'}</b>
@@ -315,13 +453,10 @@ const KEYS_NOTE = 'Each file’s key is kept in your wallet, so you can open you
 async function onFilesClick(e) {
   const b = e.target.closest('button[data-act]');
   if (!b) return;
-  const { act, hash, link } = b.dataset;
+  const { act, hash, link, bound } = b.dataset;
   try {
-    if (act === 'copy') return copy(shareUrl(SITE, link, keyOf(hash)), b);
-    if (act === 'new') {
-      const l = await A().post('/v1/links', { hash }).catch(guard); // 30 days
-      await copy(shareUrl(SITE, l.id, keyOf(hash)), b);
-    }
+    if (act === 'copy') return copy(bound ? boundUrl(SITE, link) : shareUrl(SITE, link, keyOf(hash)), b);
+    if (act === 'new') return relinkFile(hash);
     if (act === 'off') await A().del(`/v1/links/${link}`).catch(guard);
     if (act === 'del') {
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Delete for good?'; setTimeout(() => { b.dataset.sure = ''; b.textContent = 'Delete'; }, 4000); return; }
@@ -343,7 +478,14 @@ const drop = $('#drop');
 ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, () => drop.classList.remove('over')));
 drop.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) send(f); });
 $('#copy').onclick = (e) => copy($('#url').value, e.currentTarget);
-$('#ttl').onchange = relink;
+$('#ttl').onchange = onTtl;
+$('#ttl-date').onchange = canMake;
+$('#linkform').addEventListener('submit', make);
+document.querySelectorAll('input[name=aud]').forEach((r) => { r.onchange = () => { canMake(); if (audience() === 'one') $('#to').focus(); }; });
+$('#to').addEventListener('input', findSoon);
+$('#to').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); find(); } });
+$('#to-find').onclick = find;
+$('#change').onclick = change;
 $('#another').onclick = reset;
 $('#files').addEventListener('click', onFilesClick);
 $('#unlock').onclick = () => unlock(true);

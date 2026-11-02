@@ -78,6 +78,28 @@ h1,h2,h3{font-family:var(--hf);letter-spacing:-.025em;margin:0}
 .url input:focus{outline:none;border-color:var(--acc-hi)}
 .opts{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-top:14px;font-size:14px;color:var(--muted)}
 select{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--edge);background:#08080a;color:var(--ink);font:inherit;font-size:14px}
+
+/* who the link is for (v1.2) */
+.linkform{margin-top:20px;padding-top:20px;border-top:1px solid var(--edge)}
+.aud{border:0;margin:0;padding:0;display:grid;gap:10px}
+.aud legend{font:600 17px/1.3 var(--hf);padding:0;margin-bottom:10px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid var(--edge);background:#08080a;cursor:pointer}
+.opt:has(input:checked){border-color:var(--edge-acc);background:rgba(20,165,184,.07)}
+.opt input{margin:4px 0 0;accent-color:var(--acc);flex:none}
+.opt b{display:block;font:600 15px/1.3 var(--hf)}
+.opt small{display:block;color:var(--muted);font-size:14px;line-height:1.45;margin-top:2px}
+.to{display:flex;gap:8px;margin:0 0 0 2px}
+.to input{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--edge-acc);background:#08080a;color:var(--ink);font:15px/1 var(--bf)}
+.to input:focus{outline:none;border-color:var(--acc-hi)}
+.to-who{margin:0 0 4px 2px;font-size:14px;color:var(--muted);min-height:1.45em;overflow-wrap:anywhere}
+.to-who b{color:var(--ink)}
+.to-who .k{font-family:var(--mono);font-size:13px;color:var(--acc-hi)}
+.to-who.bad{color:var(--bad)}
+input[type=date]{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--edge);background:#08080a;color:var(--ink);font:inherit;font-size:14px;color-scheme:dark}
+.make-row{margin-top:18px;gap:14px;justify-content:flex-start}
+.aud-line{margin:12px 0 0;font-size:15px;color:var(--muted)}
+.aud-line b{color:var(--ink)}
+.files .aud-t{color:var(--ink)}
 .seal{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;border-radius:12px;background:rgba(20,165,184,.07);border:1px solid var(--edge-acc);font-size:14px;color:var(--muted)}
 .seal svg{flex:none;margin-top:2px}
 
@@ -132,3 +154,4 @@ footer{border-top:1px solid #121317;padding:32px 0 44px;color:var(--dim);font-si
 .mt10{margin:10px 0 0}.mt12{margin:12px 0 0}.mt16{margin-top:16px}.mt20{margin:20px 0 0}
 .done-h{margin:20px 0 0;font-weight:500}.bad-h{font-size:24px}
 .head .eyebrow{color:var(--acc)}
+.bound-h{font-size:24px}
