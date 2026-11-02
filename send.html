@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Send a file · bDriveX</title>
+<meta name="description" content="Send any file with bDriveX. It is encrypted on your device before it leaves, and only people with the link can open it. Sign in with bWalletX.">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="wrap nav">
+  <a class="brand" href="/" aria-label="bDriveX home"><img src="/logo.svg" alt="" width="22" height="30"><span>bDrive<span class="gold">X</span></span></a>
+  <div class="who" id="who"></div>
+</header>
+
+<main class="wrap">
+  <div class="head">
+    <p class="eyebrow">bDriveX Send</p>
+    <h1>Send a file</h1>
+    <p>It’s encrypted on this device before it leaves. The link carries the key, so only the people you give it to can open it. Not even we can.</p>
+  </div>
+
+  <section class="panel gate" id="gate" aria-labelledby="gate-h">
+    <h2 id="gate-h">Sign in with bWalletX</h2>
+    <p>Your wallet is your account. No email, no password. The people you send to don’t need a wallet.</p>
+    <button class="btn btn-gold" id="signin" type="button">Sign in with bWalletX</button>
+    <p class="err" id="gate-err" role="alert" hidden></p>
+    <p class="dim" style="margin-top:20px">No wallet yet? <a href="https://bwalletx.com/get">Get bWalletX</a>, it’s free.</p>
+  </section>
+
+  <div id="app" hidden>
+    <section class="panel" aria-label="Send a file">
+      <label class="drop" id="drop">
+        <input type="file" id="pick" aria-label="Choose a file to send">
+        <span class="ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd24d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6.5 9.5 12 4l5.5 5.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
+        <b>Drop a file here</b>
+        <span class="muted">or click to choose one. Any type, up to 5 GB.</span>
+      </label>
+
+      <div id="job" hidden>
+        <div class="job">
+          <span class="ext" id="job-ext">apk</span>
+          <b id="job-name"></b>
+          <small id="job-size"></small>
+        </div>
+        <div class="bar" role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100" id="job-bar"><span></span></div>
+        <div class="steps"><span id="job-step" aria-live="polite"></span><span id="job-rate"></span></div>
+        <p class="err" id="job-err" role="alert" hidden></p>
+        <div class="row" style="margin-top:14px" id="job-retry" hidden>
+          <button class="btn btn-ghost btn-sm" type="button" id="retry">Try again</button>
+          <span class="dim">It carries on from where it stopped.</span>
+        </div>
+
+        <div class="share" id="share" hidden>
+          <div class="url">
+            <input id="url" readonly aria-label="Share link" spellcheck="false">
+            <button class="btn btn-gold" id="copy" type="button">Copy link</button>
+          </div>
+          <div class="opts">
+            <label for="ttl">Link works for</label>
+            <select id="ttl">
+              <option value="86400">1 day</option>
+              <option value="604800" selected>7 days</option>
+              <option value="2592000">30 days</option>
+              <option value="">No limit</option>
+            </select>
+            <span class="dim" id="ttl-note"></span>
+            <button class="link-btn" type="button" id="another" style="margin-left:auto">Send another file</button>
+          </div>
+          <div class="seal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffd24d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <span>The key is the part after <b>#</b> in the link. Browsers never send it to a server, so bDriveX only holds scrambled bytes. Anyone with the whole link can download the file.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="files-h">
+      <div class="row">
+        <h2 id="files-h">Your files</h2>
+        <span class="dim" id="usage-t"></span>
+      </div>
+      <div class="usage"><div class="bar" aria-hidden="true"><span id="usage-bar"></span></div></div>
+      <ul class="files" id="files"></ul>
+      <p class="dim" style="margin:16px 0 0">Names and keys are kept in this browser. On another device a file shows as locked until you open its link there.</p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="/"><img src="/logo.svg" alt="" width="18" height="24"><span>bDrive<span class="gold">X</span></span></a>
+    <nav aria-label="Footer">
+      <a href="https://bwalletx.com">bWalletX home</a>
+      <a href="https://bwalletx.com/privacy">Privacy</a>
+      <a href="https://bwalletx.com/terms">Terms</a>
+    </nav>
+    <span>By The Bitcoin Corporation Ltd.</span>
+  </div>
+</footer>
+<script src="https://unpkg.com/@bwalletx/connect@0.5.4/dist/bwalletx-connect.global.js" integrity="sha384-XcXqSpSaaJDaG6j9SOt91Q/jyCgXXsLTkjLKUUtVBjQHTi8qRDbhD+hviUB5soO8" crossorigin="anonymous"></script>
+<script type="module" src="/js/send.js"></script>
+</body>
+</html>
