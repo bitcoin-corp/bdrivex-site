@@ -99,6 +99,13 @@ input[type=date]{height:36px;padding:0 10px;border-radius:10px;border:1px solid 
 .make-row{margin-top:18px;gap:14px;justify-content:flex-start}
 .aud-line{margin:12px 0 0;font-size:15px;color:var(--muted)}
 .aud-line b{color:var(--ink)}
+.tell{display:flex;gap:10px;align-items:center;margin:0 0 6px 2px;font-size:14px;color:var(--muted);cursor:pointer;min-height:32px}
+.tell input{margin:0;accent-color:var(--acc);flex:none;width:18px;height:18px}
+.tell b{color:var(--ink)}
+.mail-line{margin:8px 0 0;font-size:14px;color:var(--muted);overflow-wrap:anywhere}
+.mail-line b{color:var(--ink)}
+.mail-line.bad{color:var(--bad)}
+.mail-line .link-btn{margin-left:6px}
 .files .aud-t{color:var(--ink)}
 .seal{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;border-radius:12px;background:rgba(20,165,184,.07);border:1px solid var(--edge-acc);font-size:14px;color:var(--muted)}
 .seal svg{flex:none;margin-top:2px}

@@ -73,6 +73,10 @@
               <button class="btn btn-ghost btn-sm" id="to-find" type="button">Find</button>
             </div>
             <p class="to-who" id="to-who" aria-live="polite"></p>
+            <label class="tell" id="tell-row" hidden>
+              <input type="checkbox" id="tell" checked>
+              <span>Tell <b id="tell-who"></b> in bMail</span>
+            </label>
             <label class="opt">
               <input type="radio" name="aud" value="any">
               <span><b>Anyone with the link</b><small>Anyone who has this link can open it. The key is in the link.</small></span>
@@ -101,6 +105,7 @@
             <button class="btn btn-gold" id="copy" type="button">Copy link</button>
           </div>
           <p class="aud-line" id="aud-line"></p>
+          <p class="mail-line" id="mail-line" aria-live="polite" hidden></p>
           <div class="opts">
             <button class="link-btn" type="button" id="change">Change who or how long</button>
             <button class="link-btn" type="button" id="another" style="margin-left:auto">Send another file</button>

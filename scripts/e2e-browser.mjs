@@ -6,9 +6,13 @@
 // disturb dev servers on 8787/5173. The page still talks to http://127.0.0.1:8787 (js/config.js); CDP rewrites
 // those requests to this run's API. Paymail lookups are answered by the harness with throwaway keys.
 // Screenshots go to OUT_DIR (default: a temp dir), never into the repo.
+// bMail notice (v1.2.1): requests to https://messagebox.bwalletx.com are rewritten to a local relay (scripts/relay-stub.mjs,
+// real BRC-103 auth, needs `pnpm install` in scripts/vendor-bmail). The recipient's side reads its mail with the real
+// @bsv/message-box-client and checks each letter with bWalletX's own decodeEnvelope/bytesToSealed (WALLET_DIR, default
+// ../bwalletX, read-only), or with the copy below when that repo isn't there.
 import { spawn } from 'node:child_process';
 import { createECDH, createHash, randomBytes } from 'node:crypto';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -36,6 +40,57 @@ const bundle = await build({ entryPoints: [join(here, 'test-wallet.js')], bundle
 const WALLET = bundle.outputFiles[0].text;
 
 // ---- servers
+if (!existsSync(join(here, 'vendor-bmail/node_modules/@bsv/message-box-client'))) { console.error('Run `pnpm install --frozen-lockfile` in scripts/vendor-bmail first (the local relay and the recipient side need it).'); process.exit(1); }
+const { startRelay } = await import(pathToFileURL(join(here, 'relay-stub.mjs')).href);
+const relay = await startRelay();
+const VNM = join(here, 'vendor-bmail/node_modules');
+const { MessageBoxClient } = await import(pathToFileURL(join(VNM, '@bsv/message-box-client/dist/mod.js')).href);
+const { PrivateKey, ProtoWallet } = await import(pathToFileURL(join(VNM, '@bsv/sdk/dist/esm/mod.js')).href);
+
+// ---- bWalletX's own envelope rules (src/mobile/bmail/envelope.ts), loaded read-only from the wallet repo
+const WALLET_DIR = resolve(process.env.WALLET_DIR || join(SITE_DIR, '../bwalletX'));
+let walletRules = null;
+try {
+  const src = readFileSync(join(WALLET_DIR, 'src/mobile/bmail/envelope.ts'), 'utf8');
+  const { transform } = await import(pathToFileURL(join(API_DIR, 'node_modules/esbuild/lib/main.js')).href);
+  const { code } = await transform(src, { loader: 'ts', format: 'esm' });
+  walletRules = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+} catch {}
+// The same checks, copied from envelope.ts (2 Nov 2026), for a checkout without the wallet repo.
+const copiedRules = {
+  decodeEnvelope(raw) {
+    let j = raw;
+    if (typeof raw === 'string') { try { j = JSON.parse(raw); } catch { return null; } }
+    if (!j || typeof j !== 'object' || j.t !== 'bmail' || j.v !== 1) return null;
+    const KEY = /^0[23][0-9a-f]{64}$/i;
+    if (typeof j.id !== 'string' || !/^[0-9a-f]{8,64}$/i.test(j.id)) return null;
+    if (typeof j.from !== 'string' || !KEY.test(j.from) || typeof j.to !== 'string' || !KEY.test(j.to)) return null;
+    if (typeof j.sealed !== 'string' || !j.sealed || j.sealed.length > 64000) return null;
+    if (!(typeof j.at === 'number' && Number.isSafeInteger(j.at) && j.at >= 0)) return null;
+    return { t: 'bmail', v: 1, id: j.id.toLowerCase(), from: j.from.toLowerCase(), to: j.to.toLowerCase(), at: j.at, sealed: j.sealed };
+  },
+  bytesToSealed(b) {
+    const j = JSON.parse(new TextDecoder().decode(new Uint8Array(b)));
+    return { subject: typeof j.subject === 'string' ? j.subject.slice(0, 120) : '', body: typeof j.body === 'string' ? j.body.slice(0, 10000) : '' };
+  },
+};
+const rules = walletRules || copiedRules;
+// The recipient's wallet reading its bMail, as bWalletX's fetchMail + openMail do (relay sender must match `from`).
+async function readMail(priv) {
+  const w = new ProtoWallet(PrivateKey.fromHex(priv));
+  const me = (await w.getPublicKey({ identityKey: true })).publicKey.toLowerCase();
+  const msgs = await new MessageBoxClient({ walletClient: w, host: relay.url }).listMessages({ messageBox: 'bmail', host: relay.url });
+  const out = [];
+  for (const m of msgs) {
+    const env = rules.decodeEnvelope(m.body);
+    if (!env || env.from !== String(m.sender).toLowerCase() || env.to !== me) { out.push({ m, env: null }); continue; }
+    const { plaintext } = await w.decrypt({ ciphertext: [...Buffer.from(env.sealed, 'base64')], protocolID: [2, 'bmail'], keyID: env.id, counterparty: env.from });
+    out.push({ m, env, sealed: rules.bytesToSealed(plaintext) });
+  }
+  return out;
+}
+const relayCount = () => relay.messages.length;
+
 const procs = [];
 const apiData = mkdtempSync(join(tmpdir(), 'bdx-e2e-api-'));
 procs.push(spawn(process.execPath, [join(API_DIR, 'src/server.js')], {
@@ -46,7 +101,7 @@ procs.push(spawn(process.execPath, [join(SITE_DIR, 'scripts/dev.mjs')], { env: {
 const up = async (u) => { for (let i = 0; i < 60; i++) { try { await fetch(u); return; } catch { await sleep(150); } } throw new Error(`${u} did not start`); };
 await up(`http://127.0.0.1:${API_PORT}/health`);
 await up(`http://127.0.0.1:${SITE_PORT}/`);
-const cleanup = () => { for (const p of procs) try { p.kill(); } catch {} rmSync(apiData, { recursive: true, force: true }); };
+const cleanup = () => { for (const p of procs) try { p.kill(); } catch {} try { relay.close(); } catch {} rmSync(apiData, { recursive: true, force: true }); };
 process.on('exit', cleanup);
 
 // ---- paymail answers (throwaway keys only, unless --real-jon lets one real lookup through)
@@ -99,13 +154,14 @@ async function browser(walletKey, { width = 1440, height = 1100, mobile = false 
       const { requestId, request } = d.params;
       seen.push(`${request.method} ${request.url}`);
       if (request.url.startsWith('http://127.0.0.1:8787/')) return send('Fetch.continueRequest', { requestId, url: request.url.replace('http://127.0.0.1:8787/', `http://127.0.0.1:${API_PORT}/`) });
+      if (request.url.startsWith('https://messagebox.bwalletx.com/')) return send('Fetch.continueRequest', { requestId, url: request.url.replace('https://messagebox.bwalletx.com', relay.url) });
       const a = paymailStub(request.url);
       if (a === 'pass') return send('Fetch.continueRequest', { requestId });
       return send('Fetch.fulfillRequest', { requestId, responseCode: a.status, responseHeaders: [{ name: 'content-type', value: 'application/json' }, { name: 'access-control-allow-origin', value: '*' }], body: Buffer.from(a.body).toString('base64') });
     }
   };
   await send('Page.enable'); await send('Runtime.enable'); await send('DOM.enable'); await send('Log.enable');
-  await send('Fetch.enable', { patterns: ['http://127.0.0.1:8787/*', 'https://pay.bwallet.space/*', 'https://dns.google/*', 'https://cloud.handcash.io/*'].map((urlPattern) => ({ urlPattern })) });
+  await send('Fetch.enable', { patterns: ['http://127.0.0.1:8787/*', 'https://messagebox.bwalletx.com/*', 'https://pay.bwallet.space/*', 'https://dns.google/*', 'https://cloud.handcash.io/*'].map((urlPattern) => ({ urlPattern })) });
   const dl = join(OUT, `dl-${port}`);
   mkdirSync(dl, { recursive: true });
   await send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: dl });
@@ -160,17 +216,51 @@ const ten = await A.ev(`(() => { const d = new Date(Date.now() + 10 * 864e5); co
 await A.ev(`(() => { const s = ${$v('#ttl')}; s.value = 'date'; s.dispatchEvent(new Event('change')); const d = ${$v('#ttl-date')}; d.value = ${JSON.stringify(ten)}; d.dispatchEvent(new Event('change')); })()`);
 ok(await A.ev(`!${$v('#ttl-date')}.hidden && ${$v('#ttl-date')}.max.length === 10`), 'A: "Until a date…" shows a date picker capped at 30 days');
 await A.shot('a1-link-form.png');
-const callsBefore = (await A.ev('window.__calls')).filter((c) => c === 'encrypt').length;
+ok(await A.ev(`!${$v('#tell-row')}.hidden && ${$v('#tell')}.checked && ${$v('#tell-row')}.textContent.trim() === 'Tell $testjon in bMail'`), 'A: "Tell $testjon in bMail" shows under the recipient, ticked');
+const wraps = () => A.ev(`window.__protoCalls.filter((c) => c[0] === 'encrypt' && c[1] === 'bdrivex share').length`);
+const callsBefore = await wraps();
+const protoBefore = (await A.ev('window.__protoCalls')).length;
+await A.ev(`window.__slow = { 'bdrivex share': 400 }`); // the person takes a moment on the sheet
 await A.ev(`${$v('#make')}.click()`);
 ok(await A.until(`!${$v('#share')}.hidden`), 'A: the link is made');
 const bound = await A.ev(`${$v('#url')}.value`);
 ok(/\/s\/[\w-]{22}$/.test(bound) && !bound.includes('#'), `A: the link has no #k: ${bound.replace(/[\w-]{22}$/, '…')}`);
-ok((await A.ev('window.__calls')).filter((c) => c === 'encrypt').length === callsBefore + 1, 'A: the sender\'s wallet wrapped the key for the recipient (encrypt)');
+await A.ev(`window.__slow = {}`);
+ok((await wraps()) === callsBefore + 1, 'A: the sender\'s wallet wrapped the key for the recipient (encrypt)');
 const tenLabel = await A.ev(`new Date(${JSON.stringify(ten)} + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })`);
 const audLine = await A.ev(`${$v('#aud-line')}.textContent`);
 ok(audLine === `Only $testjon can open this · Link works until ${tenLabel}`, `A: "${audLine}"`);
 ok(await A.until(`[...document.querySelectorAll('#files .aud-t')].some((e) => e.textContent === 'Only $testjon')`), 'A: the file list shows "Only $testjon"');
 await A.shot('a2-sent-to-one.png');
+
+// ---- the bMail notice
+ok(await A.until(`${$v('#mail-line')}.textContent.startsWith('bMail sent.')`, 30000), `A: "${await A.ev(`${$v('#mail-line')}.textContent`)}"`);
+const asked = (await A.ev('window.__protoCalls')).slice(protoBefore);
+const firstFour = asked.slice(0, 4).map((c) => `${c[0]} ${c[1]}`).sort().join(' | ');
+ok(firstFour === ['encrypt bdrivex share', 'encrypt bmail', 'getPublicKey auth message signature', 'getPublicKey server hmac'].sort().join(' | ') && asked[0][1] === 'bdrivex share',
+  `A: the wrap (first), the bMail seal and the relay sign-in permissions are asked for together, before any signing (${asked.slice(0, 4).map((c) => c[1]).join(', ')})`);
+ok(!asked.some((c) => c[1] === 'messagebox'), 'A: no messagebox HMAC (the letter id is the relay message id)');
+ok(relayCount() === 1, 'A: the relay got one letter');
+const raw = relay.messages[0];
+ok(raw.messageBox === 'bmail' && raw.recipient === RECIP.pub && raw.sender === SENDER.pub, 'relay: box "bmail", from the sender\'s key (BRC-103 authenticated), to the recipient\'s key');
+const mail = await readMail(RECIP.priv);
+ok(mail.length === 1 && !!mail[0].env, `R's wallet: the letter passes bWalletX's decodeEnvelope (${walletRules ? 'loaded from ' + WALLET_DIR : 'copied rules; wallet repo not found'}) and the relay-sender check`);
+const env = mail[0].env;
+const outer = typeof mail[0].m.body === 'string' ? JSON.parse(mail[0].m.body) : mail[0].m.body;
+ok(JSON.stringify(Object.keys(outer).sort()) === JSON.stringify(['at', 'from', 'id', 'sealed', 't', 'to', 'v']), `envelope fields: ${Object.keys(outer).join(', ')} (no postage)`);
+ok(env.id === raw.messageId && env.from === SENDER.pub && env.to === RECIP.pub && Math.abs(Date.now() - env.at) < 120000, 'envelope: id = relay message id, from/to = the identity keys, at = now');
+ok(mail[0].sealed.subject === '$testsender sent you a file', `R's wallet decrypts the subject: "${mail[0].sealed.subject}"`);
+const tenLong = await A.ev(`new Date(${JSON.stringify(ten)} + 'T12:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })`);
+const wantBody = `quarterly-report.pdf (2.0 MB) is waiting for you on bDriveX.\n\nOpen it with your bWalletX:\n${bound}\n\nThe link works until ${tenLong}. Only your wallet can open it.`;
+ok(mail[0].sealed.body === wantBody, `R's wallet decrypts the body: ${JSON.stringify(mail[0].sealed.body)}`);
+const linkId = bound.split('/').pop();
+const open = JSON.stringify({ ...raw, body: JSON.stringify({ message: JSON.stringify({ ...outer, sealed: '' }) }) });
+ok(!/quarterly|report|pdf|2\.0 MB|bdrivex|\/s\/|waiting|sent you/i.test(open) && !open.includes(linkId), 'nothing about the file or the link outside the seal (relay record + envelope)');
+ok(!Buffer.from(outer.sealed, 'base64').toString('latin1').includes('quarterly'), 'the seal is ciphertext');
+const X3 = newKey();
+let wrongOpen = false;
+try { await new ProtoWallet(PrivateKey.fromHex(X3.priv)).decrypt({ ciphertext: [...Buffer.from(outer.sealed, 'base64')], protocolID: [2, 'bmail'], keyID: env.id, counterparty: env.from }); wrongOpen = true; } catch {}
+ok(!wrongOpen, 'another wallet cannot open the seal');
 
 // a second link for the same file, for anyone, from the file list
 await A.ev(`document.querySelector('#files [data-act=new]').click()`);
@@ -182,9 +272,47 @@ await A.ev(`${$v('#make')}.click()`);
 ok(await A.until(`!${$v('#share')}.hidden`), 'A: anyone-link made');
 const anyone = await A.ev(`${$v('#url')}.value`);
 ok(/#k=[\w-]{43}$/.test(anyone), 'A: the anyone-link carries #k');
+ok(await A.ev(`${$v('#tell-row')}.hidden && ${$v('#mail-line')}.hidden`) && relayCount() === 1, 'A: an anyone-link offers no bMail and sends none');
 ok((await A.ev(`${$v('#aud-line')}.textContent`)).startsWith('Anyone who has this link can open it · Link works until'), 'A: and says anyone can open it');
 ok(await A.until(`(() => { const t = [...document.querySelectorAll('#files .aud-t')].map((e) => e.textContent); return t.includes('Only $testjon') && t.includes('Anyone with the link'); })()`), 'A: the list shows each link\'s audience');
 await A.shot('a3-file-list.png');
+// ---- unticked: nothing is sent
+const newOneLink = async (who) => {
+  await A.ev(`document.querySelector('#files [data-act=new]').click()`);
+  await A.until(`!${$v('#linkform')}.hidden`);
+  await A.ev(`(() => { const r = document.querySelector('input[name=aud][value=one]'); r.checked = true; r.dispatchEvent(new Event('change')); })()`);
+  await A.ev(typeTo(who));
+  return A.until(`!${$v('#make')}.disabled && ${$v('#make')}.textContent === 'Send to ${who}'`);
+};
+ok(await newOneLink('$testjon') && await A.ev(`${$v('#tell')}.checked`), 'A: a new link for one person ticks "Tell … in bMail" again');
+await A.ev(`${$v('#tell')}.click()`);
+let n0 = relayCount(), seals0 = await A.ev(`window.__protoCalls.filter((c) => c[1] === 'bmail').length`);
+await A.ev(`${$v('#make')}.click()`);
+ok(await A.until(`!${$v('#share')}.hidden`), 'A (unticked): the link is made');
+await sleep(1500);
+ok(relayCount() === n0 && (await A.ev(`window.__protoCalls.filter((c) => c[1] === 'bmail').length`)) === seals0 && await A.ev(`${$v('#mail-line')}.hidden`), 'A (unticked): no bMail sealed or sent, nothing said about one');
+
+// ---- the sender declines the bMail on the wallet sheet: the link still works
+ok(await newOneLink('$testjon'), 'A: another link for $testjon');
+await A.ev(`window.__decline = ['bmail']`);
+n0 = relayCount();
+await A.ev(`${$v('#make')}.click()`);
+ok(await A.until(`!${$v('#share')}.hidden`), 'A (bMail declined): the link is still made');
+ok(await A.until(`${$v('#mail-line')}.textContent.startsWith('Couldn’t send the bMail. Send them the link yourself.') && !!${$v('#mail-copy')}`), 'A (bMail declined): "Couldn’t send the bMail. Send them the link yourself." with a Copy button');
+ok(relayCount() === n0, 'A (bMail declined): nothing reached the relay');
+await A.ev(`window.__decline = []`);
+
+// ---- the relay fails: the link still works, and the recipient can open it
+ok(await newOneLink('$testjon'), 'A: one more link for $testjon');
+await fetch(`${relay.url}/__fail?on=1`, { method: 'POST' });
+n0 = relayCount();
+const tries0 = relay.state.sendCalls;
+await A.ev(`${$v('#make')}.click()`);
+ok(await A.until(`!${$v('#share')}.hidden`), 'A (relay down): the link is still made');
+const boundFail = await A.ev(`${$v('#url')}.value`);
+ok(await A.until(`${$v('#mail-line')}.textContent.startsWith('Couldn’t send the bMail.')`, 30000) && relay.state.sendCalls > tries0 && relayCount() === n0, 'A (relay down): the relay refused it and the page says to send the link yourself');
+await A.shot('a4-bmail-failed.png');
+await fetch(`${relay.url}/__fail?on=0`, { method: 'POST' });
 console.log('  A console:', A.logs.filter((l) => !/Experimental|DevTools/.test(l)).slice(-6));
 A.close();
 
@@ -222,6 +350,10 @@ await sleep(1500);
 const got = readdirSync(R.dl).filter((f) => !f.endsWith('.crdownload'));
 ok(got.length === 1 && createHash('sha256').update(readFileSync(join(R.dl, got[0]))).digest('hex') === want, 'R: the saved file is byte for byte the original');
 await R.shot('r2-downloaded.png');
+await R.go(boundFail);
+await R.until(`!${$v('#file')}.hidden || !${$v('#bound')}.hidden`);
+if (await R.ev(`!${$v('#bound')}.hidden`)) await R.ev(`${$v('#b-signin')}.click()`);
+ok(await R.until(`!${$v('#file')}.hidden && ${$v('#f-name')}.textContent === 'quarterly-report.pdf'`), 'R: the link whose bMail failed opens all the same');
 console.log('  R console:', R.logs.filter((l) => !/Experimental|DevTools/.test(l)).slice(-6));
 R.close();
 

@@ -1,7 +1,8 @@
 // /send: sign in with bWalletX, seal and upload a file, say who it's for, hand back a link; list, re-link and delete
 // your files. v1.2: a link is for one person by default (their wallet unwraps the key); "anyone with the link" is a
-// choice the sender makes.
+// choice the sender makes. v1.2.1: for one person, the sender's wallet can also tell them in bMail (js/bmail.js).
 import { API, SITE } from './config.js';
+import { askAlongside, deliver, loadClient, noticeText, sealNotice } from './bmail.js';
 import { ApiError, api, boundUrl, fileSource, makeLink, saveKeyWrap, shareUrl, unwrapKey, uploadFile } from './bdx-client.js';
 import { importKey, openMeta, unb64u } from './bdx-crypto.js';
 import { resolveRecipient, shortKey } from './paymail.js';
@@ -12,7 +13,7 @@ const K_SESSION = 'bdx:session', K_KEYS = 'bdx:keys', K_RESUME = 'bdx:resume';
 store.set(K_SESSION, null); // v1 kept it in localStorage; clear any left behind
 let session = tabStore.get(K_SESSION, null);
 if (session && session.expiresAt < Date.now() + 60_000) session = null;
-let handle = null, busy = false, current = null; // current = { hash, key, name, linkId }
+let handle = null, busy = false, current = null; // current = { hash, key, name, size, linkId }
 let recipient = null, finding = null; // recipient = { label, paymail, identityKey } once looked up
 let wallet = null, files = null, usage = null, unlocking = null, moved = false;
 
@@ -201,6 +202,8 @@ function canMake() {
   const ok = ready && (!one || !!recipient) && ttlValue() != null;
   $('#make').disabled = !ok;
   $('#make').textContent = one ? (recipient ? `Send to ${recipient.label}` : 'Make link') : 'Make a link anyone can open';
+  $('#tell-row').hidden = !(one && recipient);
+  if (recipient) $('#tell-who').textContent = recipient.label;
   $('#make-note').textContent = !ready && !current?.hash ? 'You can choose while it uploads.' : '';
 }
 
@@ -213,6 +216,9 @@ async function send(file) {
   }
   busy = true;
   current = null;
+  $('#tell').checked = true;
+  noticeRun++;
+  mailLine('');
   $('#drop').hidden = true;
   $('#job').hidden = false;
   $('#share').hidden = true;
@@ -249,7 +255,7 @@ async function send(file) {
       if (e instanceof ApiError && e.status === 401) guard(e);
       store.set(K_KEYS, { ...legacy(), [up.hash]: up.key }); // not in the wallet: keep it here, as v1 did, and move it next visit
     }
-    current = { hash: up.hash, key: up.key, name: file.name, linkId: null };
+    current = { hash: up.hash, key: up.key, name: file.name, size: file.size, linkId: null };
     $('#job-step').innerHTML = '<span class="ok">Uploaded and encrypted.</span> Now say who it’s for.';
     $('#job-rate').textContent = `${bytes(file.size)} in ${Math.max(1, Math.round((Date.now() - startedAt) / 1000))} s`;
     loadFiles();
@@ -283,15 +289,31 @@ async function make(e) {
   busy = true;
   const b = $('#make');
   b.disabled = true;
+  const tell = one && $('#tell').checked;
+  noticeRun++;
+  mailLine('');
+  let sealing = null; // the bMail notice, sealed by the sender's wallet while it wraps the key
   try {
     let w = null;
     if (one) {
       b.textContent = 'Approve in bWalletX…';
       w = await getWallet(true);
     } else b.textContent = 'Making your link…';
+    const file = { name: current.name, size: current.size };
+    // The letter's seal and the relay sign-in are asked for at the same moment as the key wrap, so bWalletX can put
+    // them on the same sheet. They can fail on their own (the person unticks them): the link never depends on them.
+    const alongside = tell ? (l) => {
+      const words = noticeText({ sender: handle || shortKey(session.identityKey), name: file.name, size: bytes(file.size), url: l.url, expiresAt: l.expiresAt });
+      sealing = sealNotice(w, { from: session.identityKey, to: to.identityKey, ...words });
+      sealing.catch(() => {});
+      // A moment later, still inside the wallet's merge window (bWalletX: 60 ms), so the sheet leads with the key
+      // wrap and its title names "bdrivex share", not the relay's sign-in keys.
+      setTimeout(() => askAlongside(w), 15);
+      loadClient().catch(() => {});
+    } : null;
     const link = await within(120_000, makeLink({
       base: API, token: session.token, site: SITE, hash: current.hash, key: current.key, ttl,
-      recipient: one ? to.identityKey : null, recipientLabel: one ? to.label : null, wallet: w,
+      recipient: one ? to.identityKey : null, recipientLabel: one ? to.label : null, wallet: w, alongside,
     })).catch(guard);
     if (current.linkId) await A().del(`/v1/links/${current.linkId}`).catch(() => {});
     current.linkId = link.id;
@@ -306,12 +328,36 @@ async function make(e) {
     $('#url').focus();
     $('#url').select();
     loadFiles();
+    if (sealing) sendNotice(sealing, w, to, link.url);
   } catch (e2) {
     err.textContent = e2 && e2.name === 'AbortError' ? 'You closed bWalletX before it finished. Try again.' : (e2 && e2.message) || 'That didn’t work. Try again.';
     err.hidden = false;
   } finally {
     busy = false;
     canMake();
+  }
+}
+
+// ---- the bMail notice. It never blocks, delays or undoes the link: if it fails, the sender passes the link on.
+let noticeRun = 0; // a newer link (or "Change who") makes an older notice's result stale
+function mailLine(html, bad) {
+  const el = $('#mail-line');
+  el.hidden = !html;
+  el.classList.toggle('bad', !!bad);
+  el.innerHTML = html || '';
+}
+async function sendNotice(sealing, w, to, url) {
+  const run = noticeRun;
+  mailLine(`Telling <b>${esc(to.label)}</b> in bMail… Approve in bWalletX if it asks.`);
+  try {
+    const env = await within(120_000, sealing);
+    await within(60_000, deliver(w, env));
+    if (run === noticeRun) mailLine(`<span class="ok">bMail sent.</span> ${esc(to.label)} will find the link in bMail in their bWalletX.`);
+  } catch (e) {
+    console.warn('[bDriveX] bMail notice not sent:', (e && e.message) || e);
+    if (run !== noticeRun) return;
+    mailLine('Couldn’t send the bMail. Send them the link yourself. <button class="link-btn" type="button" id="mail-copy">Copy link</button>', true);
+    $('#mail-copy').onclick = (ev) => copy(url, ev.currentTarget);
   }
 }
 
@@ -323,6 +369,8 @@ async function copy(text, btn) {
 }
 
 function change() {
+  noticeRun++;
+  mailLine('');
   $('#share').hidden = true;
   $('#linkform').hidden = false;
   canMake();
@@ -332,7 +380,10 @@ function change() {
 function relinkFile(hash) {
   const m = names.get(hash), key = keyOf(hash);
   if (!m || !key || busy) return;
-  current = { hash, key, name: m.name, linkId: null };
+  current = { hash, key, name: m.name, size: m.size, linkId: null };
+  $('#tell').checked = true;
+  noticeRun++;
+  mailLine('');
   $('#drop').hidden = true;
   $('#job').hidden = false;
   $('#job-ext').textContent = ext(m.name);
@@ -351,6 +402,8 @@ function relinkFile(hash) {
 }
 
 function reset() {
+  noticeRun++;
+  mailLine('');
   current = null;
   $('#job').hidden = true;
   $('#drop').hidden = false;

@@ -1,0 +1,17 @@
+{
+  "name": "bdrivex-vendor-bmail",
+  "private": true,
+  "type": "module",
+  "description": "Builds js/vendor/message-box-client.js (the MessageBox client bDriveX uses to send a bMail notice) and holds the local test relay's deps. See README.md.",
+  "scripts": {
+    "build": "esbuild entry.js --bundle --format=esm --platform=browser --target=es2022 --minify --legal-comments=none --define:process.env.NODE_ENV='\"production\"' --banner:js='/*! @bsv/message-box-client 2.5.4 + @bsv/sdk 2.8.11 + @bsv/authsocket-client 2.1.7 (Open BSV License), bundled for bDriveX. Rebuild: scripts/vendor-bmail/README.md */' --outfile=../../js/vendor/message-box-client.js"
+  },
+  "devDependencies": {
+    "@bsv/auth-express-middleware": "2.2.9",
+    "@bsv/authsocket-client": "2.1.7",
+    "@bsv/message-box-client": "2.5.4",
+    "@bsv/sdk": "2.8.11",
+    "esbuild": "0.28.2",
+    "express": "5.1.0"
+  }
+}

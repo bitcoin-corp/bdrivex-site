@@ -258,8 +258,11 @@ export async function unwrapFromSender(wallet, { hash, linkId, wrap, senderKey }
  * Make a link. With `recipient` (identity key) the link is bound to that wallet: it is made first, then the wallet
  * wraps the key with the new link's id and the wrap is handed to bDriveX. If the wallet declines, the half-made link
  * is switched off. Returns { id, createdAt, expiresAt, bound, url }.
+ * `alongside(link)` (bound links only) runs right after the wallet is asked to wrap the key, before the answer, so
+ * other wallet requests it starts (the bMail notice) reach the wallet together with the wrap and the wrap stays the
+ * first thing asked. What it starts is the caller's to await: nothing it does can fail or delay the link.
  */
-export async function makeLink({ base, token, site, hash, key, ttl = null, recipient = null, recipientLabel = null, wallet = null }) {
+export async function makeLink({ base, token, site, hash, key, ttl = null, recipient = null, recipientLabel = null, wallet = null, alongside = null }) {
   const a = api(base, token);
   if (!recipient) {
     const l = await a.post('/v1/links', { hash, ttl });
@@ -267,7 +270,9 @@ export async function makeLink({ base, token, site, hash, key, ttl = null, recip
   }
   const l = await a.post('/v1/links', { hash, ttl, recipient, ...(recipientLabel ? { recipientLabel } : {}) });
   try {
-    const recipientWrap = await wrapForRecipient(wallet, { hash, linkId: l.id, key, recipient });
+    const wrapping = wrapForRecipient(wallet, { hash, linkId: l.id, key, recipient });
+    try { alongside?.({ ...l, url: boundUrl(site, l.id) }); } catch {}
+    const recipientWrap = await wrapping;
     await a.call('PUT', `/v1/links/${l.id}/recipient`, { json: { recipient, recipientWrap } });
   } catch (e) {
     await a.del(`/v1/links/${l.id}`).catch(() => {});
