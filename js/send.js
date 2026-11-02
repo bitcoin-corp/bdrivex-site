@@ -2,11 +2,12 @@
 import { API, SITE } from './config.js';
 import { ApiError, api, fileSource, shareUrl, uploadFile } from './bdx-client.js';
 import { importKey, openMeta, unb64u } from './bdx-crypto.js';
-import { $, bytes, day, esc, eta, ext, store, typeOf } from './ui.js';
+import { $, bytes, day, esc, eta, ext, store, tabStore, typeOf } from './ui.js';
 
 const C = window.bWalletXConnect;
 const K_SESSION = 'bdx:session', K_KEYS = 'bdx:keys', K_RESUME = 'bdx:resume';
-let session = store.get(K_SESSION, null);
+store.set(K_SESSION, null); // v1 kept it in localStorage; clear any left behind
+let session = tabStore.get(K_SESSION, null);
 if (session && session.expiresAt < Date.now() + 60_000) session = null;
 let handle = null, busy = false, current = null; // current = { hash, key, linkId }
 
@@ -22,7 +23,7 @@ function drawWho() {
   if (!session) { who.innerHTML = ''; return; }
   const k = session.identityKey;
   who.innerHTML = `<span class="chip" title="${esc(k)}"><i></i>${esc(handle || k.slice(0, 6) + '…' + k.slice(-4))}</span><button class="link-btn" type="button" id="signout">Sign out</button>`;
-  $('#signout').onclick = signOut;
+  $('#signout').onclick = () => signOut(false);
 }
 
 function show() {
@@ -57,7 +58,7 @@ async function signIn() {
     });
     const v = await a.post('/v1/auth/verify', { identityKey: r.identityKey, nonce: r.nonce, signature: r.signature });
     session = v;
-    store.set(K_SESSION, v);
+    tabStore.set(K_SESSION, v);
     show();
   } catch (e) {
     if (e && e.code === 'NOT_FOUND') err.innerHTML = 'No bWalletX found in this browser. <a href="https://bwalletx.com/get">Get bWalletX</a>, or sign in again to pair your phone.';
@@ -70,20 +71,23 @@ async function signIn() {
   }
 }
 
-function signOut() {
+// everywhere: every session this wallet has, on every device. Otherwise just this one. The server forgets the token
+// either way; a 401 (already ended) needs no call.
+function signOut(everywhere, ended) {
+  if (session && !ended) A().post(everywhere === true ? '/v1/auth/signout-all' : '/v1/auth/signout', {}).catch(() => {});
   session = null; handle = null;
-  store.set(K_SESSION, null);
+  tabStore.set(K_SESSION, null);
   try { C?.clearPairing?.(); } catch {}
   show();
 }
 
 // Any 401 means the session ended: back to the sign-in panel.
-const guard = (e) => { if (e instanceof ApiError && e.status === 401) signOut(); throw e; };
+const guard = (e) => { if (e instanceof ApiError && e.status === 401) signOut(false, true); throw e; };
 
 // ---------- send
 
 const ttlValue = () => ($('#ttl').value ? Number($('#ttl').value) : null);
-const ttlNote = (expiresAt) => { $('#ttl-note').textContent = expiresAt ? `until ${day(expiresAt)}` : 'until you switch it off'; };
+const ttlNote = (expiresAt) => { $('#ttl-note').textContent = `until ${day(expiresAt)}`; };
 
 function progress(sent, total, startedAt) {
   const pc = total ? Math.floor((sent / total) * 100) : 100;
@@ -93,8 +97,13 @@ function progress(sent, total, startedAt) {
   $('#job-rate').textContent = eta(sent, total, startedAt);
 }
 
+const MAX_FILE = 2 * 1024 ** 3;
 async function send(file) {
   if (busy) return;
+  if (file.size > MAX_FILE) {
+    $('#drop').querySelector('.muted').innerHTML = `<span style="color:var(--bad)">${esc(file.name)} is ${bytes(file.size)}. Files up to 2 GB for now.</span>`;
+    return;
+  }
   busy = true;
   current = null;
   $('#drop').hidden = true;
@@ -194,9 +203,10 @@ async function loadFiles() {
   const t = Date.now();
   ul.innerHTML = files.map((f, i) => {
     const m = metas[i];
-    const live = f.links.filter((l) => !l.revokedAt && (!l.expiresAt || l.expiresAt > t));
+    const live = f.links.filter((l) => !l.revokedAt && !l.reported && (!l.expiresAt || l.expiresAt > t));
     const downloads = f.links.reduce((n, l) => n + l.downloads, 0);
-    const lk = live.map((l) => `<span>Link from ${day(l.createdAt)} · ${l.expiresAt ? 'until ' + day(l.expiresAt) : 'no limit'} · ${m ? `<button class="link-btn" data-act="copy" data-link="${l.id}" data-hash="${f.hash}">Copy</button> ` : ''}<button class="link-btn danger" data-act="off" data-link="${l.id}">Switch off</button></span>`).join('');
+    const reported = f.links.filter((l) => l.reported).length;
+    const lk = live.map((l) => `<span>Link from ${day(l.createdAt)} · until ${day(l.expiresAt)} · ${m ? `<button class="link-btn" data-act="copy" data-link="${l.id}" data-hash="${f.hash}">Copy</button> ` : ''}<button class="link-btn danger" data-act="off" data-link="${l.id}">Switch off</button></span>`).join('');
     return `<li>
       <span class="ext${m ? '' : ' lock'}">${m ? esc(ext(m.name)) : LOCK}</span>
       <b>${m ? esc(m.name) : 'Locked file'}</b>
@@ -205,7 +215,7 @@ async function loadFiles() {
         <button class="link-btn danger" data-act="del" data-hash="${f.hash}">Delete</button>
       </span>
       <small>${bytes(m ? m.size : f.size)} · ${day(f.createdAt)} · ${downloads} download${downloads === 1 ? '' : 's'}${live.length ? '' : ' · no live link'}</small>
-      ${lk ? `<span class="lk">${lk}</span>` : ''}
+      ${lk || reported ? `<span class="lk">${lk}${reported ? `<span style="color:var(--bad)">${reported === 1 ? 'A link was' : reported + ' links were'} reported and switched off</span>` : ''}</span>` : ''}
     </li>`;
   }).join('');
 }
@@ -217,7 +227,7 @@ async function onFilesClick(e) {
   try {
     if (act === 'copy') return copy(shareUrl(SITE, link, keys()[hash]), b);
     if (act === 'new') {
-      const l = await A().post('/v1/links', { hash, ttl: 604800 }).catch(guard);
+      const l = await A().post('/v1/links', { hash }).catch(guard); // 30 days
       await copy(shareUrl(SITE, l.id, keys()[hash]), b);
     }
     if (act === 'off') await A().del(`/v1/links/${link}`).catch(guard);
@@ -234,6 +244,7 @@ async function onFilesClick(e) {
 // ---------- wire up
 
 $('#signin').onclick = signIn;
+$('#signout-all').onclick = () => signOut(true);
 $('#pick').onchange = (e) => { const f = e.target.files[0]; if (f) send(f); };
 const drop = $('#drop');
 ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));

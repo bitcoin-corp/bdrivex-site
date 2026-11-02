@@ -107,6 +107,11 @@ select{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--edge
 .facts li span:last-child{color:var(--ink);text-align:right}
 .hash{font:12px/1.5 var(--mono);color:var(--muted);overflow-wrap:anywhere;margin:6px 0 0}
 .ok{color:var(--good)}
+.report{margin-top:24px;padding-top:16px;border-top:1px solid #121317}
+.report summary{cursor:pointer;color:var(--dim);font-size:14px;width:max-content}
+.report summary:hover{color:var(--ink)}
+.report[open] summary{color:var(--ink);margin-bottom:8px}
+.report select{display:block;margin:6px 0 12px;width:100%;max-width:360px}
 
 footer{border-top:1px solid #121317;padding:32px 0 44px;color:var(--dim);font-size:14px;margin-top:64px}
 .foot{display:flex;flex-wrap:wrap;gap:16px 28px;justify-content:space-between;align-items:center}
@@ -114,3 +119,4 @@ footer{border-top:1px solid #121317;padding:32px 0 44px;color:var(--dim);font-si
 .foot nav a{color:var(--muted);text-decoration:none}
 .foot nav a:hover{color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.get .report .btn{width:auto;margin-top:0}

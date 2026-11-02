@@ -41,7 +41,7 @@
         <input type="file" id="pick" aria-label="Choose a file to send">
         <span class="ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd24d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6.5 9.5 12 4l5.5 5.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></span>
         <b>Drop a file here</b>
-        <span class="muted">or click to choose one. Any type, up to 5 GB.</span>
+        <span class="muted">or click to choose one. Any type, up to 2 GB.</span>
       </label>
 
       <div id="job" hidden>
@@ -67,9 +67,8 @@
             <label for="ttl">Link works for</label>
             <select id="ttl">
               <option value="86400">1 day</option>
-              <option value="604800" selected>7 days</option>
-              <option value="2592000">30 days</option>
-              <option value="">No limit</option>
+              <option value="604800">7 days</option>
+              <option value="2592000" selected>30 days</option>
             </select>
             <span class="dim" id="ttl-note"></span>
             <button class="link-btn" type="button" id="another" style="margin-left:auto">Send another file</button>
@@ -90,6 +89,7 @@
       <div class="usage"><div class="bar" aria-hidden="true"><span id="usage-bar"></span></div></div>
       <ul class="files" id="files"></ul>
       <p class="dim" style="margin:16px 0 0">Names and keys are kept in this browser. On another device a file shows as locked until you open its link there.</p>
+      <p class="dim" style="margin:8px 0 0">Signed in somewhere you shouldn’t be? <button class="link-btn" type="button" id="signout-all">Sign out everywhere</button></p>
     </section>
   </div>
 </main>

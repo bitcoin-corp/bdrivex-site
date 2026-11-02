@@ -23,6 +23,7 @@ async function load() {
     link = await openLink({ base: API, id, key });
   } catch (e) {
     if (e.status === 410) return bad('This link has expired', 'Ask the sender for a new one.');
+    if (e.status === 404 && /report/.test(e.message)) return bad('This link was switched off', 'Someone reported it, so it’s switched off while we review it.');
     if (e.status === 404) return bad('This link was switched off', 'The sender switched it off or deleted the file. Ask them for a new one.');
     return bad('This link doesn’t work', e.message);
   }
@@ -33,7 +34,8 @@ async function load() {
   $('#f-name').textContent = m.name;
   $('#f-size').textContent = bytes(m.size);
   $('#f-sent').textContent = day(link.createdAt);
-  $('#f-until').textContent = link.expiresAt ? `until ${day(link.expiresAt)}` : 'until the sender switches it off';
+  $('#f-until').textContent = `until ${day(link.expiresAt)}`;
+  $('#report').hidden = false;
   document.title = `${m.name} · bDriveX`;
 }
 
@@ -96,6 +98,27 @@ async function download() {
   }
 }
 
+async function report() {
+  const b = $('#r-send'), done = $('#r-done');
+  if (!$('#r-why').value) { done.textContent = 'Choose a reason first.'; done.hidden = false; return; }
+  b.disabled = true;
+  try {
+    const r = await fetch(`${API}/v1/s/${encodeURIComponent(id)}/report`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reason: $('#r-why').value }),
+    });
+    if (!r.ok && r.status !== 404) throw new Error((await r.json().catch(() => null))?.error || 'That didn’t go through. Try again.');
+    done.textContent = 'Thank you. The link is switched off and we’ll review it.';
+    done.hidden = false;
+    $('#dl').hidden = true;
+    b.hidden = true;
+  } catch (e) {
+    done.textContent = e.message;
+    done.hidden = false;
+    b.disabled = false;
+  }
+}
+
 $('#dl').onclick = download;
+$('#r-send').onclick = report;
 $('#again').onclick = () => { $('#dl').hidden = false; $('#dl').disabled = false; download(); };
 load();

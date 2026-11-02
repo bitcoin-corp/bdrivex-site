@@ -62,6 +62,21 @@
       <span>Encrypted end to end. Your browser decrypts the file as it downloads, using the key in the link. bDriveX never sees the key or the file. No wallet or account needed.</span>
     </div>
     <p class="dim" style="margin:20px 0 0">Want to send files like this? <a href="/send">Try bDriveX</a>.</p>
+    <details class="report" id="report" hidden>
+      <summary>Report this link</summary>
+      <p class="dim">If this file is illegal or harmful, report it and the link is switched off straight away. We review every report.</p>
+      <label class="dim" for="r-why">What’s wrong?</label>
+      <select id="r-why">
+        <option value="" selected disabled>Choose a reason</option>
+        <option>Child sexual abuse material</option>
+        <option>Terrorist content</option>
+        <option>Malware or a scam</option>
+        <option>Someone else’s copyright</option>
+        <option>Something else illegal or harmful</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" type="button" id="r-send">Report and switch off</button>
+      <p class="dim" id="r-done" role="status" hidden></p>
+    </details>
   </div>
 </main>
 
