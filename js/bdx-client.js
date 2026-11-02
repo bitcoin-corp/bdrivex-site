@@ -7,7 +7,9 @@ import {
 } from './bdx-crypto.js';
 
 /** Segments per PATCH. 8 MiB chunks: few round trips, small loss when a chunk has to be resent. */
-const PER_CHUNK = 8;
+// One 1 MiB segment per PATCH, so the progress bar moves every megabyte (owner, 2 Nov 2026: it sat at 0% for
+// the first 8 MiB). The server has no per-request limit on PATCH; resumable offsets work the same at any size.
+const PER_CHUNK = 1;
 const RETRIES = 6;
 const wait = (ms, signal) => new Promise((ok, no) => {
   const t = setTimeout(ok, ms);

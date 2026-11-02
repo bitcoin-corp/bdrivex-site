@@ -154,7 +154,7 @@ function progress(sent, total, startedAt) {
   const pc = total ? Math.floor((sent / total) * 100) : 100;
   $('#job-bar span').style.width = pc + '%';
   $('#job-bar').setAttribute('aria-valuenow', String(pc));
-  $('#job-step').textContent = `Encrypting and uploading · ${pc}%`;
+  $('#job-step').textContent = sent ? `Encrypting and uploading · ${pc}% · ${bytes(sent)} of ${bytes(total)}` : 'Encrypting and uploading · starting…';
   $('#job-rate').textContent = eta(sent, total, startedAt);
 }
 
