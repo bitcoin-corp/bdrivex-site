@@ -122,6 +122,8 @@ footer{border-top:1px solid #121317;padding:32px 0 44px;color:var(--dim);font-si
 .foot nav a:hover{color:var(--ink)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .get .report .btn{width:auto;margin-top:0}
+.beta-note{margin-top:16px;padding:10px 14px;border:1px solid var(--edge-acc);border-radius:10px;color:var(--ink,inherit);font-size:14px;line-height:1.5}
+.beta-note b{color:var(--acc-hi)}
 .beta{display:inline-block;margin-left:8px;padding:4px 8px;border-radius:999px;border:1px solid var(--edge-acc);color:var(--acc-hi);font:600 11px/1 var(--hf);letter-spacing:.06em;vertical-align:1px}
 /* family wordmark in the footer (the header one is .xs-brand from shell.css) */
 .foot .brand svg{width:18px;height:24px;color:#F5B800;flex:none}

@@ -1,5 +1,11 @@
 {
   "cleanUrls": true,
+  "git": {
+    "deploymentEnabled": {
+      "*": false,
+      "main": true
+    }
+  },
   "headers": [
     {
       "source": "/.well-known/bwalletx-theme.json",
