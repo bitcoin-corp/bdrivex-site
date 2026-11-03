@@ -1,7 +1,7 @@
 // Headless Chrome over CDP: /send and /s/:id end to end with throwaway in-page wallets (scripts/test-wallet.js).
 //   node scripts/e2e-browser.mjs              (needs ../bdrivex-api with its node_modules, and Google Chrome)
-//   node scripts/e2e-browser.mjs --real-jon   (also looks up the real $REAL_PAYMAIL key, for a manual UI check; it
-//                                              makes no link for it)
+//   REAL_PAYMAIL=<paymail> node scripts/e2e-browser.mjs --real   (also looks up that real paymail's key, for a manual UI
+//                                              check; it makes no link for it)
 // It starts its own API (invite-only: only the sender is invited) and site server on spare ports, so it doesn't
 // disturb dev servers on 8787/5173. The page still talks to http://127.0.0.1:8787 (js/config.js); CDP rewrites
 // those requests to this run's API. Paymail lookups are answered by the harness with throwaway keys.
@@ -24,7 +24,8 @@ const OUT = process.env.OUT_DIR || mkdtempSync(join(tmpdir(), 'bdx-e2e-'));
 mkdirSync(OUT, { recursive: true });
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const API_PORT = 8689, SITE_PORT = 5174, SITE = `http://localhost:${SITE_PORT}`;
-const REAL_JON = process.argv.includes('--real-jon');
+const REAL_PAYMAIL = process.argv.includes('--real') ? (process.env.REAL_PAYMAIL || '') : '';
+if (process.argv.includes('--real') && !REAL_PAYMAIL) { console.error('--real needs REAL_PAYMAIL=<paymail>'); process.exit(2); }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let fails = 0;
 const ok = (c, w) => { console.log(`${c ? '  ok ' : '  FAIL'} ${w}`); if (!c) fails++; };
@@ -104,7 +105,7 @@ await up(`http://127.0.0.1:${SITE_PORT}/`);
 const cleanup = () => { for (const p of procs) try { p.kill(); } catch {} try { relay.close(); } catch {} rmSync(apiData, { recursive: true, force: true }); };
 process.on('exit', cleanup);
 
-// ---- paymail answers (throwaway keys only, unless --real-jon lets one real lookup through)
+// ---- paymail answers (throwaway keys only, unless --real lets one real lookup through)
 const json = (o, status = 200) => ({ status, body: JSON.stringify(o) });
 function paymailStub(url) {
   const u = new URL(url);
@@ -112,7 +113,7 @@ function paymailStub(url) {
     const id = /^\/api\/paymail\/id\/(.+)$/.exec(u.pathname)?.[1];
     if (id) {
       const pm = decodeURIComponent(id);
-      if (REAL_JON && pm === 'REAL_PAYMAIL@bwalletx.com') return 'pass';
+      if (REAL_PAYMAIL && pm === REAL_PAYMAIL) return 'pass';
       if (pm === 'testjon@bwalletx.com') return json({ bsvalias: '1.0', handle: pm, pubkey: RECIP.pub });
       if (pm === 'liar@bwalletx.com') return json({ bsvalias: '1.0', handle: 'someoneelse@bwalletx.com', pubkey: THIRD.pub });
       return json({ error: 'not found' }, 404);
@@ -380,18 +381,18 @@ ok(await N.until(`!${$v('#bound')}.hidden`), 'N: the bound link asks for a sign-
 ok(!N.logs.some((l) => /Content Security Policy/i.test(l)), 'N: no CSP errors');
 N.close();
 
-// ================= optional: the real $REAL_PAYMAIL key, for the manual UI check (no link is made)
-if (REAL_JON) {
-  console.log('manual check: real lookup for $REAL_PAYMAIL');
+// ================= optional: a real paymail's key (REAL_PAYMAIL), for the manual UI check (no link is made)
+if (REAL_PAYMAIL) {
+  console.log('manual check: real lookup for ' + REAL_PAYMAIL);
   const J = await browser(SENDER.priv);
   await J.go(`${SITE}/send`);
   await J.ev(`${$v('#signin')}.click()`);
   await J.until(`!${$v('#app')}.hidden`);
   await J.upload(file);
   await J.until(`${$v('#job-step')}.textContent.includes('Uploaded and encrypted')`, 60000);
-  await J.ev(typeTo('REAL_PAYMAIL@bwalletx.com'));
-  ok(await J.until(`${$v('#to-who')}.textContent.startsWith('Sending to $REAL_PAYMAIL · ')`), `J: ${await J.ev(`${$v('#to-who')}.textContent`)}`);
-  await J.shot('j1-real-REAL_PAYMAIL.png');
+  await J.ev(typeTo(REAL_PAYMAIL));
+  ok(await J.until(`${$v('#to-who')}.textContent.startsWith('Sending to ')`), `J: ${await J.ev(`${$v('#to-who')}.textContent`)}`);
+  await J.shot('j1-real-paymail.png');
   J.close();
 }
 

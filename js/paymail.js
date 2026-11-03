@@ -1,7 +1,7 @@
 // Find a person's identity key from their $handle or paymail (bsvalias `pki`), in the browser, so bDriveX's server
 // never has a say in whose key a file is wrapped for.
-//   $jon, jon, name@bwalletx.com  -> pay.bwallet.space (bWalletX's paymail service)
-//   jon@example.com               -> SRV _bsvalias._tcp.example.com (DNS over HTTPS), else example.com:443, then
+//   $name, name, name@bwalletx.com  -> pay.bwallet.space (bWalletX's paymail service)
+//   name@example.com              -> SRV _bsvalias._tcp.example.com (DNS over HTTPS), else example.com:443, then
 //                                    /.well-known/bsvalias -> capabilities.pki
 // /send's CSP limits which paymail hosts the browser can reach (see vercel.json).
 const KEY = /^0[23][0-9a-f]{64}$/;
@@ -9,7 +9,7 @@ const BWALLETX = new Set(['bwalletx.com']);
 const BWALLETX_PKI = 'https://pay.bwallet.space/api/paymail/id/{alias}@{domain.tld}';
 const DOH = 'https://dns.google/resolve';
 
-/** "$jon" | "jon" | "name@bwalletx.com" | "name@example.com" -> { alias, domain, paymail, label } or null. */
+/** "$name" | "name" | "name@bwalletx.com" | "name@example.com" -> { alias, domain, paymail, label } or null. */
 export function parseRecipient(input) {
   let s = String(input || '').trim().replace(/^\$/, '');
   if (!s.includes('@')) s += '@bwalletx.com';
@@ -54,7 +54,7 @@ async function pkiTemplate(domain, f, ms) {
  */
 export async function resolveRecipient(input, { fetch: f = globalThis.fetch.bind(globalThis), timeout = 8000 } = {}) {
   const p = parseRecipient(input);
-  if (!p) throw new Error('Type a $handle or a paymail, like $jon or name@bwalletx.com.');
+  if (!p) throw new Error('Type a $handle or a paymail, like $name or name@bwalletx.com.');
   let j;
   try {
     const tpl = await pkiTemplate(p.domain, f, timeout);
